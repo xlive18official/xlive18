@@ -134,6 +134,25 @@ test('messages and notifications are connected to real application views', () =>
   assert.match(css, /\.notification-item/);
 });
 
+
+test('video upload stays private until moderation and approved free videos can be streamed', () => {
+  const delivery = readFileSync('supabase/migrations/0016_approved_video_delivery_and_review_notifications.sql', 'utf8');
+  assert.match(auth, /storage\.from\('video-originals'\)\.upload/);
+  assert.match(auth, /status:'pending',visibility:'public',is_paid:false/);
+  assert.match(delivery, /v\.status = 'approved'/i);
+  assert.match(delivery, /v\.is_paid = false/i);
+  assert.match(delivery, /v\.visibility = 'public'/i);
+  assert.match(delivery, /after update of status on public\.videos/i);
+  assert.match(app, /window\.XLiveAuth\?\.renderClips\(\)/);
+});
+test('messages, follow requests, and notifications have RLS enabled in their migrations', () => {
+  const requests = readFileSync('supabase/migrations/0008_private_profile_follow_requests.sql', 'utf8');
+  const messaging = readFileSync('supabase/migrations/0015_direct_messages_and_social_notifications.sql', 'utf8');
+  assert.match(requests, /alter table public\.follow_requests enable row level security/i);
+  assert.match(messaging, /alter table public\.messages enable row level security/i);
+  assert.match(messaging, /grant select on public\.notifications to authenticated/i.test(schema) ? /notifications/ : /alter table public\.notifications/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
