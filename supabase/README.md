@@ -4,7 +4,7 @@ This directory contains the versioned SQL migration history for XLive 18.
 
 ## Current linked project
 
-The schema and migrations through `0021_allow_approved_followers_to_view_private_profiles.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. The GitHub Actions workflow has been added, but a successful CI run and end-to-end browser tests have not yet been confirmed.
+The schema and migrations through `0022_support_removal_of_approved_videos.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. The GitHub Actions workflow has been added, but a successful CI run and end-to-end browser tests have not yet been confirmed.
 
 ## Reproducing the database in a fresh project
 
