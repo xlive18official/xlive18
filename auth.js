@@ -7,6 +7,7 @@
   let mode = 'signin';
   let user = null;
   let subscription = null;
+  let activeConversationId = null;
 
   function feedback(message) {
     const node = document.getElementById('auth-feedback');
@@ -80,6 +81,21 @@
     }
   });
   document.addEventListener('submit', async event => {
+    if (event.target.id === 'message-send-form') {
+      event.preventDefault();
+      const supabase = ensureClient();
+      await syncCurrentUser(supabase);
+      if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
+      const form = event.target;
+      const body = document.getElementById('message-body')?.value.trim();
+      if (!body) return;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      const {error} = await supabase.from('messages').insert({sender_id:user.id,recipient_id:form.dataset.recipientId,body});
+      if (error) { messageSocial('تعذر إرسال الرسالة. تحقق من وجود متابعة بين الحسابين وعدم وجود حظر.'); console.error('XLive send message error',error); submit.disabled = false; return; }
+      await renderMessages(form.dataset.recipientId);
+      return;
+    }
     if (event.target.id !== 'auth-form') return;
     event.preventDefault();
     const supabase = ensureClient();
@@ -174,12 +190,14 @@
         return;
       }
       const current = user?.id;
-      const [{data: follows}, {data: requests}, {data: blocks}] = await Promise.all([
+      const [{data: follows}, {data: followers}, {data: requests}, {data: blocks}] = await Promise.all([
         current ? supabase.from('follows').select('followed_id').eq('follower_id', current) : Promise.resolve({data: []}),
+        current ? supabase.from('follows').select('follower_id').eq('followed_id', current) : Promise.resolve({data: []}),
         current ? supabase.from('follow_requests').select('target_id,status').eq('requester_id', current) : Promise.resolve({data: []}),
         current ? supabase.from('user_blocks').select('blocked_id').eq('blocker_id', current) : Promise.resolve({data: []})
       ]);
       const following = new Set((follows || []).map(x => x.followed_id));
+      const followsBack = new Set((followers || []).map(x => x.follower_id));
       const requested = new Map((requests || []).filter(x => x.status === 'pending').map(x => [x.target_id, x.status]));
       const blocked = new Set((blocks || []).map(x => x.blocked_id));
       panel.innerHTML = data.map(p => {
@@ -192,7 +210,7 @@
         else if (following.has(p.id)) action = '<button class="button button-secondary" data-social-action="unfollow" data-user-id="' + p.id + '">إلغاء المتابعة</button>';
         else if (requested.get(p.id) === 'pending') action = '<span class="field-help">طلب المتابعة قيد الانتظار</span><button class="button button-secondary" data-social-action="cancel-request" data-user-id="' + p.id + '">إلغاء الطلب</button>';
         else action = '<button class="button button-primary" data-social-action="' + (p.is_private ? 'request' : 'follow') + '" data-user-id="' + p.id + '">' + (p.is_private ? 'طلب متابعة' : 'متابعة') + '</button>';
-        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + action + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + '</div></article>';
+        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + action + (current && current !== p.id && (following.has(p.id) || followsBack.has(p.id)) ? '<button class="button button-secondary" data-social-action="message" data-user-id="' + p.id + '">رسالة</button>' : '') + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + '</div></article>';
       }).join('');
       panel.insertAdjacentHTML('beforeend', '<p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>');
     } catch (error) {
@@ -235,12 +253,92 @@
       console.error('XLive social inbox error', error);
     }
   }
+
+  function shortDate(value) {
+    try { return new Date(value).toLocaleString('ar', {dateStyle:'short',timeStyle:'short'}); }
+    catch (_) { return ''; }
+  }
+  async function renderMessages(targetId) {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>الرسائل الخاصة</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    if (!user) {
+      root.innerHTML = '<div class="view-header"><h1>الرسائل الخاصة</h1><p>تواصل مع الحسابات المرتبطة بك.</p></div><div class="simple-panel"><p>سجّل الدخول لاستخدام الرسائل.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      return;
+    }
+    try {
+      const {data: rows, error} = await supabase.from('messages').select('id,sender_id,recipient_id,body,created_at,read_at').or('sender_id.eq.' + user.id + ',recipient_id.eq.' + user.id).order('created_at', {ascending:true}).limit(300);
+      if (error) throw error;
+      const messages = rows || [];
+      const latest = new Map();
+      messages.forEach(m => {
+        const other = m.sender_id === user.id ? m.recipient_id : m.sender_id;
+        const old = latest.get(other);
+        if (!old || old.created_at < m.created_at) latest.set(other, m);
+      });
+      if (!targetId) targetId = activeConversationId || [...latest.entries()].sort((a,b) => b[1].created_at.localeCompare(a[1].created_at))[0]?.[0] || null;
+      if (targetId) activeConversationId = targetId;
+      const ids = [...new Set([...latest.keys(), ...(targetId ? [targetId] : [])])];
+      let profileRows = [];
+      if (ids.length) {
+        const {data: profiles} = await supabase.from('profiles').select('id,username,display_name').in('id', ids);
+        profileRows = profiles || [];
+      }
+      const profileMap = new Map(profileRows.map(p => [p.id,p]));
+      const nameFor = id => {
+        const p = profileMap.get(id);
+        return escapeHtml(p?.display_name || (p?.username ? '@' + p.username : 'حساب ' + id.slice(0,8)));
+      };
+      let activeMessages = targetId ? messages.filter(m => (m.sender_id === user.id && m.recipient_id === targetId) || (m.sender_id === targetId && m.recipient_id === user.id)) : [];
+      const incomingIds = activeMessages.filter(m => m.recipient_id === user.id && !m.read_at).map(m => m.id);
+      if (incomingIds.length) {
+        const {error: readError} = await supabase.from('messages').update({read_at:new Date().toISOString()}).in('id', incomingIds);
+        if (!readError) activeMessages = activeMessages.map(m => incomingIds.includes(m.id) ? {...m,read_at:new Date().toISOString()} : m);
+      }
+      let connected = false;
+      if (targetId) {
+        const [outgoing, incoming] = await Promise.all([
+          supabase.from('follows').select('follower_id').eq('follower_id',user.id).eq('followed_id',targetId).maybeSingle(),
+          supabase.from('follows').select('follower_id').eq('follower_id',targetId).eq('followed_id',user.id).maybeSingle()
+        ]);
+        connected = !!outgoing.data || !!incoming.data;
+      }
+      const conversationList = ids.length ? ids.map(id => {
+        const last = latest.get(id);
+        return '<button type="button" class="conversation-item ' + (id === targetId ? 'active' : '') + '" data-social-action="message" data-user-id="' + id + '"><strong>' + nameFor(id) + '</strong><span>' + escapeHtml(last ? last.body.slice(0,60) : 'ابدأ محادثة جديدة') + '</span>' + (last ? '<small>' + shortDate(last.created_at) + '</small>' : '') + '</button>';
+      }).join('') : '<p class="field-help">لا توجد محادثات بعد. ابحث عن حساب تتابعه أو يتابعك لبدء محادثة.</p>';
+      const thread = targetId ? '<div class="thread-header"><div><strong>' + nameFor(targetId) + '</strong><p class="field-help">تظهر الرسائل للأطراف فقط. الحظر يمنع الوصول إلى المحادثة.</p></div></div><div class="message-list">' + (activeMessages.length ? activeMessages.map(m => '<article class="message-bubble ' + (m.sender_id === user.id ? 'mine' : 'theirs') + '"><p>' + escapeHtml(m.body) + '</p><small>' + shortDate(m.created_at) + (m.sender_id === user.id && m.read_at ? ' · تمت القراءة' : '') + '</small></article>').join('') : '<p class="field-help">لا توجد رسائل في هذه المحادثة بعد.</p>') + '</div>' + (connected ? '<form id="message-send-form" class="message-compose" data-recipient-id="' + targetId + '"><textarea id="message-body" maxlength="5000" rows="2" required placeholder="اكتب رسالتك…"></textarea><button class="button button-primary" type="submit">إرسال</button></form>' : '<p class="field-help">لإرسال الرسائل، يجب أن يتابع أحدكما الآخر وألا يكون هناك حظر.</p>') : '<div class="message-empty"><p>اختر محادثة من القائمة أو ابدأ واحدة من نتائج البحث.</p></div>';
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / MESSAGES</p><h1>الرسائل الخاصة</h1><p>محادثات بين الحسابات المرتبطة بالمتابعة.</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div><div class="messages-layout"><aside class="conversation-list"><h2>المحادثات</h2>' + conversationList + '</aside><section class="conversation-thread">' + thread + '</section></div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
+    } catch (error) {
+      root.innerHTML = '<div class="view-header"><h1>الرسائل الخاصة</h1></div><div class="simple-panel"><p>تعذر تحميل الرسائل. تحقق من تطبيق ترحيل قاعدة البيانات الأخير.</p></div>';
+      console.error('XLive messages error', error);
+    }
+  }
+  async function renderNotifications() {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>الإشعارات</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    if (!user) {
+      root.innerHTML = '<div class="view-header"><h1>الإشعارات</h1></div><div class="simple-panel"><p>سجّل الدخول لمشاهدة الإشعارات.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      return;
+    }
+    const {data, error} = await supabase.from('notifications').select('id,actor_id,kind,title,body,target_type,target_id,read_at,created_at').eq('recipient_id',user.id).order('created_at',{ascending:false}).limit(100);
+    if (error) {
+      root.innerHTML = '<div class="view-header"><h1>الإشعارات</h1></div><div class="simple-panel"><p>تعذر تحميل الإشعارات.</p></div>';
+      console.error('XLive notifications error',error);
+      return;
+    }
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACTIVITY</p><h1>الإشعارات</h1><p>تنبيهات المتابعة والرسائل وطلبات المتابعة.</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div><div class="notification-list">' + ((data || []).length ? data.map(n => '<article class="notification-item ' + (n.read_at ? '' : 'unread') + '"><div><strong>' + escapeHtml(n.title) + '</strong><p>' + escapeHtml(n.body) + '</p><small>' + shortDate(n.created_at) + '</small></div><div class="social-actions">' + (!n.read_at ? '<button class="button button-secondary" data-social-action="mark-notification-read" data-notification-id="' + n.id + '">تمت القراءة</button>' : '') + (n.kind === 'message' && n.actor_id ? '<button class="button button-primary" data-social-action="message" data-user-id="' + n.actor_id + '">فتح المحادثة</button>' : '') + '</div></article>').join('') : '<p class="field-help">لا توجد إشعارات بعد.</p>') + '</div>';
+  }
+
   async function handleSocialAction(action, targetId) {
     const supabase = ensureClient();
     if (!supabase || !user) { messageSocial('سجّل الدخول أولاً لتنفيذ هذا الإجراء.'); return; }
     try {
+      if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
-      if (action === 'follow') result = await supabase.from('follows').insert({follower_id:user.id, followed_id:targetId});
+      if (action === 'mark-notification-read') result = await supabase.from('notifications').update({read_at:new Date().toISOString()}).eq('id',targetId).eq('recipient_id',user.id);
+      else if (action === 'follow') result = await supabase.from('follows').insert({follower_id:user.id, followed_id:targetId});
       else if (action === 'unfollow') result = await supabase.from('follows').delete().eq('follower_id',user.id).eq('followed_id',targetId);
       else if (action === 'request') {
         const {data: existing, error: lookupError} = await supabase.from('follow_requests').select('status').eq('requester_id',user.id).eq('target_id',targetId).maybeSingle();
@@ -257,10 +355,11 @@
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
-      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.'};
+      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
-      await renderSocialInbox();
+      if (action === 'mark-notification-read') await renderNotifications();
+      else await renderSocialInbox();
       messageSocial(messages[action] || 'تم تحديث الإجراء.');
     } catch (error) {
       const msg = String(error?.message || '');
@@ -276,5 +375,5 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
 })();
