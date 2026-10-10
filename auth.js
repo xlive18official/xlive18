@@ -27,6 +27,15 @@
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
+  async function syncCurrentUser(supabase) {
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      user = data?.session?.user || null;
+      return user;
+    } catch (_) { return user; }
+  }
   async function renderProfile() {
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
     if (user) {
@@ -151,6 +160,7 @@
       panel.innerHTML = '<p class="field-help">خدمة الحسابات غير مهيأة بعد.</p>';
       return;
     }
+    await syncCurrentUser(supabase);
     if (!user) {
       panel.innerHTML = '<p class="field-help">سجّل الدخول أولاً للبحث عن الحسابات وإرسال طلبات المتابعة.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button>';
       return;
@@ -192,7 +202,9 @@
   }
   async function renderSocialInbox() {
     const supabase = ensureClient();
-    if (!supabase || !user) return;
+    if (!supabase) return;
+    await syncCurrentUser(supabase);
+    if (!user) return;
     const requestsPanel = document.getElementById('follow-requests-panel');
     const blocksPanel = document.getElementById('blocked-accounts-panel');
     try {
@@ -202,13 +214,13 @@
         if (!requests?.length) requestsPanel.innerHTML = '<p class="field-help">لا توجد طلبات معلّقة.</p>';
         else {
           const ids = requests.map(r => r.requester_id);
-          const {data: profiles} = await supabase.rpc('search_profiles', {search_term: ''});
+          const {data: profiles} = await supabase.from('profiles').select('id,username,display_name').in('id', ids);
           const byId = new Map((profiles || []).map(p => [p.id,p]));
           requestsPanel.innerHTML = requests.map(r => {
             const p = byId.get(r.requester_id);
-            return '<article class="social-user"><div><strong>' + escapeHtml(p?.display_name || 'عضو') + '</strong><p>طلب متابعة · ' + r.requester_id.slice(0,8) + '</p></div><div class="social-actions"><button class="button button-primary" data-social-action="accept" data-user-id="' + r.requester_id + '">قبول</button><button class="button button-secondary" data-social-action="reject" data-user-id="' + r.requester_id + '">رفض</button></div></article>';
+            return '<article class="social-user"><div><strong>' + escapeHtml(p?.display_name || p?.username || 'عضو') + '</strong><p>' + (p?.username ? '@' + escapeHtml(p.username) + ' · ' : '') + 'طلب متابعة</p></div><div class="social-actions"><button class="button button-primary" data-social-action="accept" data-user-id="' + r.requester_id + '">قبول</button><button class="button button-secondary" data-social-action="reject" data-user-id="' + r.requester_id + '">رفض</button></div></article>';
           }).join('');
-          if (!byId.size && ids.length) requestsPanel.querySelectorAll('.social-user p').forEach((node,i) => { node.textContent = 'طلب متابعة من حساب ' + ids[i].slice(0,8); });
+
         }
       }
       const {data: blocks, error: blockError} = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id);
