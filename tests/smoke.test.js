@@ -51,10 +51,15 @@ test('video publication and room state are restricted by database policies', () 
 });
 
 
-test('private profiles are readable only by their owner', () => {
+test('private profiles are visible only to the owner and approved followers', () => {
+  const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
+  const followerPrivacy = readFileSync('supabase/migrations/0021_allow_approved_followers_to_view_private_profiles.sql', 'utf8');
   assert.match(schema, /using \(id = \(select auth\.uid\(\)\) or is_private = false\);/);
   assert.match(profilePrivacy, /for select to anon, authenticated[\s\S]*?using \(id = \(select auth\.uid\(\)\) or is_private = false\);/);
-  assert.doesNotMatch(profilePrivacy, /using \(true\)/i);
+  assert.match(followerPrivacy, /for select to anon[\s\S]*?using \(is_private = false\)/i);
+  assert.match(followerPrivacy, /f\.follower_id = \(select auth\.uid\(\)\)/i);
+  assert.match(followerPrivacy, /not private\.is_blocked_pair\(\(select auth\.uid\(\)\), profiles\.id\)/i);
+  assert.doesNotMatch(followerPrivacy, /using \(true\)/i);
 });
 
 
