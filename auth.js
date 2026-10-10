@@ -407,6 +407,33 @@
     }
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / UPLOAD</p><h1>رفع فيديو</h1><p>يُخزن الفيديو بشكل خاص ويبقى قيد المراجعة حتى الموافقة.</p></div><button class="back-home" data-view="clips">العودة للمقاطع ←</button></div><div class="notice-panel"><span class="notice-icon">ⓘ</span><div><strong>حدود الرفع</strong><p>MP4 أو WebM أو MOV، بحد أقصى 50 ميغابايت. لا يصبح الفيديو عاماً قبل الموافقة، ولا تدعم هذه الواجهة المدفوعات أو تحويل الفيديو.</p></div></div><form id="video-upload-form" class="simple-panel form-stack"><div class="field"><label for="video-title">عنوان الفيديو</label><input id="video-title" maxlength="120" required placeholder="عنوان واضح للمقطع"></div><div class="field"><label for="video-description">الوصف (اختياري)</label><textarea id="video-description" maxlength="2000" rows="3" placeholder="أضف تفاصيل عن المقطع"></textarea></div><div class="field"><label for="video-file">ملف الفيديو</label><input id="video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">الحد الأقصى 50 ميغابايت. لا ترفع محتوى لا تملك حق نشره أو يخالف إرشادات المنصة.</p></div><button class="button button-primary" id="video-upload-submit" type="submit">رفع وإرسال للمراجعة</button><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>';
   }
+
+  async function renderHomeFeed() {
+    const panel = document.getElementById('home-feed');
+    if (!panel) return;
+    const supabase = ensureClient();
+    if (!supabase) return;
+    await syncCurrentUser(supabase);
+    try {
+      const {data, error} = await supabase.from('videos').select('id,title,description,storage_path,created_at').eq('status','approved').eq('is_paid',false).eq('visibility','public').order('created_at',{ascending:false}).limit(3);
+      if (error) throw error;
+      const videos = data || [];
+      if (!videos.length) {
+        panel.innerHTML = '<div class="empty-symbol">✦</div><h3>ستبدأ القصص هنا</h3><p>لا يوجد محتوى عام مقبول بعد. لن نعرض بيانات تجريبية على أنها محتوى حقيقي.</p><span class="status-pill"><span class="status-dot"></span> بانتظار نشر أول فيديو مقبول</span>';
+        return;
+      }
+      const cards = await Promise.all(videos.map(async v => {
+        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path,3600);
+        return '<article class="home-clip-card">' + (signed?.signedUrl ? '<video controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح</div>') + '<div><strong>' + escapeHtml(v.title) + '</strong><p>' + escapeHtml(v.description || '') + '</p></div></article>';
+      }));
+      panel.className = 'home-feed-grid';
+      panel.innerHTML = cards.join('');
+    } catch (error) {
+      panel.innerHTML = '<p class="field-help">تعذر تحميل آخر المقاطع حالياً.</p>';
+      console.error('XLive home feed error',error);
+    }
+  }
+
   async function renderClips() {
     const supabase = ensureClient();
     if (!supabase) { root.innerHTML = '<div class="view-header"><h1>المقاطع</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
@@ -582,5 +609,6 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  if (document.getElementById('home-feed')) renderHomeFeed();
 })();
