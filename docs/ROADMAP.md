@@ -23,7 +23,7 @@
 - `supabase/migrations/0006_remove_follows_on_block.sql`: حذف المتابعات المتبادلة تلقائياً عند الحظر.
 - `supabase/migrations/0007_restrict_follows_to_public_profiles.sql`: منع المتابعة المباشرة للحسابات الخاصة.
 - `supabase/migrations/0008_private_profile_follow_requests.sql`: جدول طلبات متابعة للحسابات الخاصة، مع قبول/رفض من صاحب الحساب وحذف الطلبات عند الحظر.
-- `supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql` و`0010_allow_unblock_from_account_search.sql` و`0012_limit_profile_search_to_authenticated_users.sql` و`0013_tighten_profile_search_and_follow_request_transitions.sql` و`0014_optimize_rls_policy_evaluation.sql` و`0015_direct_messages_and_social_notifications.sql` و`0016_approved_video_delivery_and_review_notifications.sql`: بحث للحسابات المسجلة فقط، نتائج بادئة محدودة، وإغلاق انتقالات طلب المتابعة بعد القبول أو الرفض.
+- `supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql` و`0010_allow_unblock_from_account_search.sql` و`0012_limit_profile_search_to_authenticated_users.sql` و`0013_tighten_profile_search_and_follow_request_transitions.sql` و`0014_optimize_rls_policy_evaluation.sql` و`0015_direct_messages_and_social_notifications.sql` و`0016_approved_video_delivery_and_review_notifications.sql` و`0017_room_cancellation_and_video_review_validation.sql`: بحث للحسابات المسجلة فقط، نتائج بادئة محدودة، وإغلاق انتقالات طلب المتابعة بعد القبول أو الرفض.
 - `supabase/README.md`: خطوات تشغيل الترحيلات يدوياً.
 - `docs/PROVIDER_DECISIONS.md`: مقارنة مبدئية للمزوّدين والحصص المجانية ومخاطر سياسة المحتوى.
 
@@ -35,7 +35,7 @@
 - واجهة المصادقة موصولة بعميل Supabase، وأضيفت واجهة بحث الحسابات وأزرار المتابعة/طلب المتابعة/القبول/الرفض/الحظر/إلغاء الحظر. لم يُختبر إنشاء حساب حقيقي أو هذه التدفقات من متصفح بعد؛ لذلك لا تُعد المصادقة والتفاعلات مجتازة للاختبار حتى الآن. أضيف مسار GitHub Actions لتشغيل فحص JavaScript والاختبارات عند الدفع أو فتح طلب دمج. تم فحص التحليل النحوي لملفات JavaScript، لكن نتيجة تشغيل CI الفعلية غير مؤكدة. دالة البحث SECURITY DEFINER محدودة للمستخدمين المسجلين وتعيد بيانات تعريفية فقط؛ ما زال مستشار Supabase يعرض تحذيراً لهذه الدالة ويحتاج مراجعة أمنية قبل الإنتاج.
 - أضيف رفع فيديو إلى bucket خاص مع حد 50 ميغابايت وصيغ محددة، وإدخال metadata بحالة `pending`، ومشاهدة المقاطع المقبولة المجانية العامة، وأزرار مراجعة للمستخدم الذي يحمل دور admin. لا يوجد فحص آلي للمحتوى أو تحويل/ضغط فيديو أو معاينة مدفوعة؛ ولا يزال اختبار رفع ومراجعة فعلي مطلوباً.
 - أضيف جدول الرسائل الخاصة بسياسات RLS، وواجهة المحادثات وإرسال الرسائل وإيصالات القراءة، مع إشعارات آلية للرسائل والمتابعة وطلبات المتابعة. لا يزال اختبارها بحسابين حقيقيين مطلوباً.
-- لا توجد خدمة WebRTC/SFU متصلة أو رموز دخول للغرف.
+- أضيف إنشاء طلبات غرف صوتية/مرئية وحفظها بحالة pending مع إمكانية إلغائها؛ لم يتم ربط WebRTC/SFU أو إصدار رموز الدخول، لذلك لا يمكن بدء بث حقيقي.
 - لا توجد بوابة دفع أو مشتريات حقيقية.
 - لا يوجد نشر إنتاجي أو اختبار متصفح آلي موثق.
 
