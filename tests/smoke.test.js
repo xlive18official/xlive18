@@ -103,6 +103,16 @@ test('account discovery RPC exposes minimal fields and is hardened in the latest
   assert.match(hardening, /old\.status <> 'pending'/i);
   assert.match(hardening, /new\.target_id <> auth\.uid\(\)/i);
 });
+
+test('RLS policies use initplan-friendly auth checks and avoid overlapping admin ALL policies', () => {
+  const rls = readFileSync('supabase/migrations/0014_optimize_rls_policy_evaluation.sql', 'utf8');
+  assert.match(rls, /\(select auth\.jwt\(\)\)/i);
+  assert.match(rls, /drop policy if exists "videos_admin_all"/i);
+  assert.match(rls, /drop policy if exists "rooms_admin_all"/i);
+  assert.match(rls, /create policy "videos_admin_delete"/i);
+  assert.match(rls, /create policy "rooms_admin_delete"/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
