@@ -199,6 +199,15 @@ test('client table grants are least-privilege and do not expose server-only colu
   assert.match(inserts, /grant insert \(requester_id, target_id, status\) on public\.follow_requests/i);
 });
 
+
+test('admins can remove previously approved videos and owners are notified', () => {
+  const removal = readFileSync('supabase/migrations/0022_support_removal_of_approved_videos.sql', 'utf8');
+  assert.match(auth, /data-social-action="remove-video"/);
+  assert.match(auth, /status = 'removed'/);
+  assert.match(removal, /new\.status in \('approved','rejected','removed'\)/i);
+  assert.match(removal, /when new\.status = 'removed' then 'تمت إزالة الفيديو'/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
