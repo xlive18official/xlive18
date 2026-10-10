@@ -220,6 +220,14 @@ test('saved videos are private to the owner and only approved public videos can 
   assert.match(auth, /renderSaved/);
 });
 
+
+test('homepage loads only approved free public videos from Supabase', () => {
+  assert.match(app, /id="home-feed"/);
+  assert.match(app, /window\.XLiveAuth\?\.renderHomeFeed\(\)/);
+  assert.match(auth, /from\('videos'\)\.select\('id,title,description,storage_path,created_at'\)\.eq\('status','approved'\)\.eq\('is_paid',false\)\.eq\('visibility','public'\)/);
+  assert.match(auth, /function renderHomeFeed\(\)/);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
