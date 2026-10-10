@@ -520,7 +520,7 @@
     const button = event.target.closest('[data-social-action]');
     if (!button) return;
     event.preventDefault();
-    handleSocialAction(button.dataset.socialAction, button.dataset.userId || button.dataset.notificationId || button.dataset.videoId || button.dataset.roomId || button.dataset.reportId);
+    handleSocialAction(button.dataset.socialAction, button.dataset.userId || button.dataset.notificationId || button.dataset.videoId || button.dataset.roomId || button.dataset.reportId || button.dataset.messageId);
   });
 
   if (window.supabase && config) ensureClient();
