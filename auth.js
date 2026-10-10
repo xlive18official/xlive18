@@ -213,8 +213,8 @@
   async function renderSearch(term) {
     const panel = document.getElementById('account-search-results');
     if (!panel) return;
-    if (String(term || '').trim().length < 2) {
-      panel.innerHTML = '<p class="field-help">اكتب حرفين على الأقل للبحث عن الحسابات.</p>';
+    if (String(term || '').trim().length < 3) {
+      panel.innerHTML = '<p class="field-help">اكتب ثلاثة أحرف على الأقل للبحث عن الحسابات.</p>';
       return;
     }
     const supabase = ensureClient();
@@ -440,7 +440,7 @@
         const last = latest.get(id);
         return '<button type="button" class="conversation-item ' + (id === targetId ? 'active' : '') + '" data-social-action="message" data-user-id="' + id + '"><strong>' + nameFor(id) + '</strong><span>' + escapeHtml(last ? last.body.slice(0,60) : 'ابدأ محادثة جديدة') + '</span>' + (last ? '<small>' + shortDate(last.created_at) + '</small>' : '') + '</button>';
       }).join('') : '<p class="field-help">لا توجد محادثات بعد. ابحث عن حساب تتابعه أو يتابعك لبدء محادثة.</p>';
-      const thread = targetId ? '<div class="thread-header"><div><strong>' + nameFor(targetId) + '</strong><p class="field-help">تظهر الرسائل للأطراف فقط. الحظر يمنع الوصول إلى المحادثة.</p></div></div><div class="message-list">' + (activeMessages.length ? activeMessages.map(m => '<article class="message-bubble ' + (m.sender_id === user.id ? 'mine' : 'theirs') + '"><p>' + escapeHtml(m.body) + '</p><small>' + shortDate(m.created_at) + (m.sender_id === user.id && m.read_at ? ' · تمت القراءة' : '') + '</small></article>').join('') : '<p class="field-help">لا توجد رسائل في هذه المحادثة بعد.</p>') + '</div>' + (connected ? '<form id="message-send-form" class="message-compose" data-recipient-id="' + targetId + '"><textarea id="message-body" maxlength="5000" rows="2" required placeholder="اكتب رسالتك…"></textarea><button class="button button-primary" type="submit">إرسال</button></form>' : '<p class="field-help">لإرسال الرسائل، يجب أن يتابع أحدكما الآخر وألا يكون هناك حظر.</p>') : '<div class="message-empty"><p>اختر محادثة من القائمة أو ابدأ واحدة من نتائج البحث.</p></div>';
+      const thread = targetId ? '<div class="thread-header"><div><strong>' + nameFor(targetId) + '</strong><p class="field-help">تظهر الرسائل للأطراف فقط. الحظر يمنع الوصول إلى المحادثة.</p></div></div><div class="message-list">' + (activeMessages.length ? activeMessages.map(m => '<article class="message-bubble ' + (m.sender_id === user.id ? 'mine' : 'theirs') + '"><p>' + escapeHtml(m.body) + '</p><small>' + shortDate(m.created_at) + (m.sender_id === user.id && m.read_at ? ' · تمت القراءة' : '') + '</small>' + (m.sender_id !== user.id ? '<button class="text-button" data-social-action="report-message" data-message-id="' + m.id + '">إبلاغ</button>' : '') + '</article>').join('') : '<p class="field-help">لا توجد رسائل في هذه المحادثة بعد.</p>') + '</div>' + (connected ? '<form id="message-send-form" class="message-compose" data-recipient-id="' + targetId + '"><textarea id="message-body" maxlength="5000" rows="2" required placeholder="اكتب رسالتك…"></textarea><button class="button button-primary" type="submit">إرسال</button></form>' : '<p class="field-help">لإرسال الرسائل، يجب أن يتابع أحدكما الآخر وألا يكون هناك حظر.</p>') : '<div class="message-empty"><p>اختر محادثة من القائمة أو ابدأ واحدة من نتائج البحث.</p></div>';
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / MESSAGES</p><h1>الرسائل الخاصة</h1><p>محادثات بين الحسابات المرتبطة بالمتابعة.</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div><div class="messages-layout"><aside class="conversation-list"><h2>المحادثات</h2>' + conversationList + '</aside><section class="conversation-thread">' + thread + '</section></div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
     } catch (error) {
       root.innerHTML = '<div class="view-header"><h1>الرسائل الخاصة</h1></div><div class="simple-panel"><p>تعذر تحميل الرسائل. تحقق من تطبيق ترحيل قاعدة البيانات الأخير.</p></div>';
@@ -471,7 +471,7 @@
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
       if (action === 'cancel-room') result = await supabase.from('rooms').update({status:'cancelled'}).eq('id',targetId).eq('host_id',user.id).eq('status','pending');
-      else if (action === 'report-video' || action === 'report-profile') result = await supabase.from('reports').insert({reporter_id:user.id,target_type:action === 'report-video' ? 'video' : 'profile',target_id:targetId,reason:action === 'report-video' ? 'محتوى غير مناسب' : 'سلوك مسيء',details:'تم الإبلاغ من واجهة التطبيق.',status:'open'});
+      else if (action === 'report-video' || action === 'report-profile' || action === 'report-message') result = await supabase.from('reports').insert({reporter_id:user.id,target_type:action === 'report-video' ? 'video' : action === 'report-message' ? 'message' : 'profile',target_id:targetId,reason:action === 'report-video' ? 'محتوى غير مناسب' : action === 'report-message' ? 'رسالة غير مناسبة' : 'سلوك مسيء',details:'تم الإبلاغ من واجهة التطبيق.',status:'open'});
       else if (action === 'review-report' || action === 'resolve-report' || action === 'dismiss-report') {
         const status = action === 'review-report' ? 'reviewing' : action === 'resolve-report' ? 'resolved' : 'dismissed';
         result = await supabase.from('reports').update({status,moderator_id:user.id,moderator_note:status === 'resolved' ? 'تمت مراجعة البلاغ واتخاذ الإجراء المناسب.' : status === 'dismissed' ? 'تمت مراجعة البلاغ وإغلاقه دون إجراء إضافي.' : 'قيد المراجعة.',resolved_at:status === 'reviewing' ? null : new Date().toISOString()}).eq('id',targetId).select('id').maybeSingle();
@@ -499,11 +499,12 @@
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
-      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
+      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
       else if (action === 'approve-video' || action === 'reject-video' || action === 'report-video') await renderClips();
+      else if (action === 'report-message') await renderMessages(activeConversationId);
       else if (action === 'cancel-room') await renderRooms();
       else if (['review-report','resolve-report','dismiss-report'].includes(action)) await renderSettings();
       else if (action === 'report-profile' && searchTerm) await renderSearch(searchTerm);
