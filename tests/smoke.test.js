@@ -73,6 +73,16 @@ test('private profiles cannot be followed until follow requests are implemented'
   assert.match(followPrivacy, /p\.is_private = false/);
 });
 
+
+test('private profile follow requests are participant-scoped and accepted by the target only', () => {
+  const requests = readFileSync('supabase/migrations/0008_private_profile_follow_requests.sql', 'utf8');
+  assert.match(requests, /create table if not exists public\.follow_requests/i);
+  assert.match(requests, /requester_id = \(select auth\.uid\(\)\) or target_id = \(select auth\.uid\(\)\)/i);
+  assert.match(requests, /new\.target_id <> auth\.uid\(\)/i);
+  assert.match(requests, /insert into public\.follows \(follower_id, followed_id\)/i);
+  assert.match(requests, /delete from public\.follow_requests/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
