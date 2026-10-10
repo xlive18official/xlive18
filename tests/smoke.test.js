@@ -54,3 +54,24 @@ test('video storage bucket is private and scoped to the authenticated owner', ()
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
   assert.doesNotMatch(storage, /create policy[^;]+for select to anon/i);
 });
+
+const auth = readFileSync('auth.js', 'utf8');
+const config = readFileSync('supabase-config.js', 'utf8');
+
+test('Supabase client and auth module load before account interaction', () => {
+  assert.match(html, /cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/);
+  assert.match(html, /src="\.\/supabase-config\.js"/);
+  assert.match(html, /src="\.\/auth\.js" defer/);
+  assert.match(config, /https:\/\/eesyjavwmuopobmgcucb\.supabase\.co/);
+  assert.doesNotMatch(config, /service_role|secret/i);
+});
+
+test('account UI uses Supabase Auth and requires an 18+ acknowledgement for signup', () => {
+  assert.match(auth, /auth\.signUp\(/);
+  assert.match(auth, /auth\.signInWithPassword\(/);
+  assert.match(auth, /auth\.resetPasswordForEmail\(/);
+  assert.match(auth, /auth\.signOut\(/);
+  assert.match(auth, /document\.getElementById\('auth-age'\)\.checked/);
+  assert.match(auth, /age_confirmed:\s*true/);
+  assert.match(auth, /aria-live="polite"/);
+});
