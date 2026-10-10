@@ -267,9 +267,9 @@
       return;
     }
     try {
-      const {data: rows, error} = await supabase.from('messages').select('id,sender_id,recipient_id,body,created_at,read_at').or('sender_id.eq.' + user.id + ',recipient_id.eq.' + user.id).order('created_at', {ascending:true}).limit(300);
+      const {data: rows, error} = await supabase.from('messages').select('id,sender_id,recipient_id,body,created_at,read_at').or('sender_id.eq.' + user.id + ',recipient_id.eq.' + user.id).order('created_at', {ascending:false}).limit(300);
       if (error) throw error;
-      const messages = rows || [];
+      const messages = (rows || []).reverse();
       const latest = new Map();
       messages.forEach(m => {
         const other = m.sender_id === user.id ? m.recipient_id : m.sender_id;
