@@ -197,7 +197,8 @@ alter table public.purchases enable row level security;
 -- Profiles: public profile fields only; no email or private auth data is stored here.
 drop policy if exists "profiles_select_public" on public.profiles;
 create policy "profiles_select_public" on public.profiles
-for select to anon, authenticated using (true);
+for select to anon, authenticated
+using (id = (select auth.uid()) or is_private = false);
 drop policy if exists "profiles_update_self" on public.profiles;
 create policy "profiles_update_self" on public.profiles
 for update to authenticated
