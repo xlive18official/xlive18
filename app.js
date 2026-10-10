@@ -85,6 +85,8 @@
     }
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / WORKSPACE</p><h1>' + meta.title + '</h1><p>' + meta.subtitle + '</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>' + body;
     if (view === 'search') window.XLiveAuth?.renderSearch(extra);
+    if (view === 'messages') window.XLiveAuth?.renderMessages();
+    if (view === 'notifications') window.XLiveAuth?.renderNotifications();
   }
 
   function homeMarkup() {
