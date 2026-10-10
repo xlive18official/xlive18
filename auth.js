@@ -245,6 +245,7 @@
       else if (action === 'request') {
         const {data: existing, error: lookupError} = await supabase.from('follow_requests').select('status').eq('requester_id',user.id).eq('target_id',targetId).maybeSingle();
         if (lookupError) throw lookupError;
+        if (existing?.status === 'pending') { messageSocial('طلب المتابعة قيد الانتظار بالفعل.'); return; }
         if (existing && existing.status !== 'pending') {
           const {error: deleteError} = await supabase.from('follow_requests').delete().eq('requester_id',user.id).eq('target_id',targetId);
           if (deleteError) throw deleteError;
