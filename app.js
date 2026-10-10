@@ -72,7 +72,7 @@
     } else if (view === 'settings') {
       body = notice('إعدادات الحساب غير محفوظة', descriptions.settings[1]) + '<div class="section-grid"><div class="simple-panel"><h3>الأمان والجلسات</h3><p>تسجيل الدخول، إدارة الجلسات، واستعادة الحساب.</p></div><div class="simple-panel"><h3>الخصوصية والحظر</h3><p>من يستطيع مراسلتك أو متابعة حسابك، وإدارة الحسابات المحظورة.</p></div></div>';
     } else if (view === 'search') {
-      body = notice('نتائج البحث', 'عبارة البحث: <span class="search-query">' + escapeHtml(extra || '') + '</span>. البحث لن يعرض نتائج وهمية أو محتوى قيد المراجعة.') + empty('لا توجد نتائج متاحة', descriptions.search[1]);
+      body = notice('نتائج البحث', 'ابحث عن حسابات بالاسم أو اسم المستخدم. لن تُعرض بيانات خاصة مثل النبذة للحسابات الخاصة.') + '<div id="account-search-results" class="social-results"><p class="field-help">جارٍ تجهيز البحث…</p></div>';
     } else {
       const desc = descriptions[view] || ['الخدمة غير متصلة', 'سيتم تفعيل هذه الميزة بعد تنفيذ الخادم وقاعدة البيانات والتحقق من الصلاحيات.'];
       body = notice(desc[0], desc[1]);
@@ -84,6 +84,7 @@
       body += '<div style="margin-top:18px">' + empty('لا توجد بيانات لعرضها بعد', 'هذا القسم ينتظر ربط الخدمة الحقيقية. ستظهر هنا البيانات الفعلية بعد تنفيذها واختبارها.') + '</div>';
     }
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / WORKSPACE</p><h1>' + meta.title + '</h1><p>' + meta.subtitle + '</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>' + body;
+    if (view === 'search') window.XLiveAuth?.renderSearch(extra);
   }
 
   function homeMarkup() {
