@@ -185,7 +185,8 @@ test('Supabase client and auth module load before account interaction', () => {
   assert.match(html, /src="\.\/supabase-config\.js"/);
   assert.match(html, /src="\.\/auth\.js" defer/);
   assert.match(config, /https:\/\/eesyjavwmuopobmgcucb\.supabase\.co/);
-  assert.doesNotMatch(config, /service_role|secret/i);
+  assert.match(config, /sb_publishable_/);
+  assert.doesNotMatch(config, /service_role\s*[:=]\s*['"]|sb_secret_/i);
 });
 
 test('account UI uses Supabase Auth and requires an 18+ acknowledgement for signup', () => {
