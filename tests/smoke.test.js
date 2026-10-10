@@ -104,6 +104,15 @@ test('account discovery RPC exposes minimal fields and is hardened in the latest
   assert.match(hardening, /new\.target_id <> auth\.uid\(\)/i);
 });
 
+
+test('account search requires authentication and a longer prefix', () => {
+  const search = readFileSync('supabase/migrations/0018_require_longer_authenticated_profile_search.sql', 'utf8');
+  assert.match(search, /auth\.uid\(\) is not null/i);
+  assert.match(search, /between 3 and 64/i);
+  assert.match(search, /limit 20/i);
+  assert.match(auth, /اكتب ثلاثة أحرف على الأقل/);
+});
+
 test('RLS policies use initplan-friendly auth checks and avoid overlapping admin ALL policies', () => {
   const rls = readFileSync('supabase/migrations/0014_optimize_rls_policy_evaluation.sql', 'utf8');
   assert.match(rls, /\(select auth\.jwt\(\)\)/i);
@@ -169,6 +178,7 @@ test('report submission and admin review are wired to RLS-protected reports', ()
   assert.match(auth, /data-social-action="resolve-report"/);
   assert.match(auth, /data-social-action="report-video"/);
   assert.match(auth, /data-social-action="report-profile"/);
+  assert.match(auth, /data-social-action="report-message"/);
 });
 
 test('video storage bucket is private and scoped to the authenticated owner', () => {
