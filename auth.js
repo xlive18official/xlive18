@@ -81,6 +81,16 @@
     }
   });
   document.addEventListener('submit', async event => {
+    if (event.target.id === 'room-create-form') {
+      event.preventDefault();
+      const supabase = ensureClient(); await syncCurrentUser(supabase);
+      if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
+      const button = document.getElementById('room-create-submit'); button.disabled = true; button.textContent = 'جارٍ الإرسال…';
+      const room = {host_id:user.id,title:document.getElementById('room-title').value.trim(),description:document.getElementById('room-description').value.trim(),media_mode:document.getElementById('room-mode').value,visibility:document.getElementById('room-visibility').value,capacity:Number(document.getElementById('room-capacity').value),status:'pending',provider_room_ref:null};
+      const {error} = await supabase.from('rooms').insert(room);
+      if (error) { messageSocial('تعذر إرسال طلب الغرفة. تحقق من الحقول والصلاحيات.'); console.error('XLive room create error',error); button.disabled=false; button.textContent='إرسال طلب الغرفة'; return; }
+      await renderRooms(); messageSocial('تم حفظ طلب الغرفة. لا يمكن بدء البث حتى إعداد مزوّد الاتصال.'); return;
+    }
     if (event.target.id === 'video-upload-form') {
       event.preventDefault();
       const supabase = ensureClient();
@@ -291,6 +301,53 @@
   }
 
 
+
+  async function renderRooms() {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>الغرف التفاعلية</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    try {
+      const {data, error} = await supabase.from('rooms').select('id,host_id,title,description,media_mode,visibility,status,capacity,created_at').order('created_at',{ascending:false}).limit(60);
+      if (error) throw error;
+      const rooms = data || [];
+      const cards = rooms.map(r => {
+        const status = r.status === 'pending' ? 'بانتظار المراجعة' : r.status === 'cancelled' ? 'ملغاة' : r.status === 'ended' ? 'انتهت' : 'حالة مباشرة مسجلة';
+        const canCancel = user?.id === r.host_id && r.status === 'pending';
+        const mode = r.media_mode === 'audio' ? 'صوتية' : 'مرئية';
+        return '<article class="room-card"><div class="clip-card-heading"><strong>' + escapeHtml(r.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(r.description || '') + '</p><div class="room-meta"><span>' + mode + '</span><span>' + (r.visibility === 'private' ? 'خاصة' : 'عامة') + '</span><span>السعة ' + r.capacity + '</span></div><p class="field-help">البث الصوتي/المرئي غير متصل بمزوّد بعد؛ هذه الغرفة طلب محفوظ فقط.</p>' + (canCancel ? '<button class="button button-secondary" data-social-action="cancel-room" data-room-id="' + r.id + '">إلغاء الطلب</button>' : '') + '</article>';
+      }).join('');
+      const form = user ? '<form id="room-create-form" class="simple-panel form-stack"><h2>طلب إنشاء غرفة</h2><div class="field"><label for="room-title">اسم الغرفة</label><input id="room-title" maxlength="120" required placeholder="عنوان الغرفة"></div><div class="field"><label for="room-description">الوصف</label><textarea id="room-description" maxlength="1000" rows="2" placeholder="ما موضوع الغرفة؟"></textarea></div><div class="field"><label for="room-mode">نوع الغرفة</label><select id="room-mode"><option value="audio">صوتية</option><option value="video">مرئية</option></select></div><div class="field"><label for="room-visibility">الخصوصية</label><select id="room-visibility"><option value="public">عامة</option><option value="private">خاصة</option></select></div><div class="field"><label for="room-capacity">عدد المشاركين</label><select id="room-capacity"><option value="2">2</option><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option><option value="25">25</option><option value="50">50</option></select></div><button class="button button-primary" id="room-create-submit" type="submit">إرسال طلب الغرفة</button><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '<div class="simple-panel"><p>سجّل الدخول لإرسال طلب إنشاء غرفة.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ROOMS</p><h1>الغرف التفاعلية</h1><p>طلبات الغرف تُحفظ، لكن الاتصال الصوتي/المرئي يحتاج مزوّد بث وإعدادات خادم.</p></div></div>' + form + '<div class="room-grid">' + (cards || '<p class="field-help">لا توجد غرف بعد.</p>') + '</div>';
+    } catch (error) {
+      root.innerHTML = '<div class="view-header"><h1>الغرف التفاعلية</h1></div><div class="simple-panel"><p>تعذر تحميل الغرف.</p></div>';
+      console.error('XLive rooms error',error);
+    }
+  }
+  async function renderLive() {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>البث المباشر</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    const {data, error} = await supabase.from('rooms').select('id,title,description,media_mode,capacity,created_at').eq('status','live').eq('visibility','public').order('created_at',{ascending:false}).limit(40);
+    if (error) {
+      root.innerHTML = '<div class="view-header"><h1>البث المباشر</h1></div><div class="simple-panel"><p>تعذر تحميل البثوث.</p></div>';
+      return;
+    }
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / LIVE</p><h1>البث المباشر</h1><p>لم يتم توصيل مزوّد الصوت/الفيديو أو إصدار رموز الدخول بعد.</p></div><button class="button button-primary" data-view="rooms">طلب غرفة</button></div><div class="notice-panel"><div><strong>البث غير متاح للانضمام حالياً</strong><p>لن نعرض زر اتصال غير عامل. يمكن تجهيز طلب غرفة من قسم الغرف.</p></div></div><div class="room-grid">' + ((data || []).length ? data.map(r => '<article class="room-card"><strong>' + escapeHtml(r.title) + '</strong><p>' + escapeHtml(r.description || '') + '</p><p class="field-help">حالة مباشرة في قاعدة البيانات، لكن خدمة الاتصال غير مهيأة.</p></article>').join('') : '<p class="field-help">لا توجد غرف معلنة حالياً.</p>') + '</div>';
+  }
+  async function renderSettings() {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>الإعدادات</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    if (!user) {
+      root.innerHTML = '<div class="view-header"><h1>الإعدادات</h1></div><div class="simple-panel"><p>سجّل الدخول لإدارة الحساب والإبلاغات.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      return;
+    }
+    const admin = user.app_metadata?.role === 'admin';
+    const {data: reports, error} = await supabase.from('reports').select('id,reporter_id,target_type,target_id,reason,details,status,created_at,moderator_note').order('created_at',{ascending:false}).limit(100);
+    const reportList = error ? '<p class="field-help">تعذر تحميل البلاغات.</p>' : (reports || []).length ? reports.map(r => '<article class="report-card"><div class="clip-card-heading"><strong>' + escapeHtml(r.reason) + '</strong><span class="status-pill">' + escapeHtml(r.status) + '</span></div><p>' + escapeHtml(r.details || '') + '</p><small>' + escapeHtml(r.target_type) + ' · ' + r.target_id.slice(0,8) + ' · ' + shortDate(r.created_at) + '</small>' + (r.moderator_note ? '<p class="field-help">' + escapeHtml(r.moderator_note) + '</p>' : '') + (admin && ['open','reviewing'].includes(r.status) ? '<div class="social-actions"><button class="button button-secondary" data-social-action="review-report" data-report-id="' + r.id + '">قيد المراجعة</button><button class="button button-primary" data-social-action="resolve-report" data-report-id="' + r.id + '">حل البلاغ</button><button class="button button-danger" data-social-action="dismiss-report" data-report-id="' + r.id + '">إغلاق بلا إجراء</button></div>' : '') + '</article>').join('') : '<p class="field-help">لا توجد بلاغات.</p>';
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / SETTINGS</p><h1>الإعدادات والأمان</h1><p>إدارة البلاغات والحسابات.</p></div><button class="back-home" data-view="profile">الملف الشخصي ←</button></div><div class="simple-panel"><h2>الخصوصية</h2><p>تغيير خصوصية الحساب متاح من صفحة الملف الشخصي. الحظر يوقف الرسائل ويحذف المتابعات وطلبات المتابعة بين الطرفين.</p><button class="button button-secondary" data-view="profile">إعدادات الملف الشخصي</button></div><section class="simple-panel report-inbox"><h2>' + (admin ? 'لوحة مراجعة البلاغات' : 'بلاغاتي') + '</h2>' + reportList + '</section><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
+  }
+
   async function renderUpload() {
     const supabase = ensureClient();
     if (!supabase) { root.innerHTML = '<div class="view-header"><h1>رفع فيديو</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
@@ -412,6 +469,12 @@
     try {
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
+      if (action === 'cancel-room') result = await supabase.from('rooms').update({status:'cancelled'}).eq('id',targetId).eq('host_id',user.id).eq('status','pending');
+      else if (action === 'report-video' || action === 'report-profile') result = await supabase.from('reports').insert({reporter_id:user.id,target_type:action === 'report-video' ? 'video' : 'profile',target_id:targetId,reason:action === 'report-video' ? 'محتوى غير مناسب' : 'سلوك مسيء',details:'تم الإبلاغ من واجهة التطبيق.',status:'open'});
+      else if (action === 'review-report' || action === 'resolve-report' || action === 'dismiss-report') {
+        const status = action === 'review-report' ? 'reviewing' : action === 'resolve-report' ? 'resolved' : 'dismissed';
+        result = await supabase.from('reports').update({status,moderator_id:user.id,moderator_note:status === 'resolved' ? 'تمت مراجعة البلاغ واتخاذ الإجراء المناسب.' : status === 'dismissed' ? 'تمت مراجعة البلاغ وإغلاقه دون إجراء إضافي.' : 'قيد المراجعة.',resolved_at:status === 'reviewing' ? null : new Date().toISOString()}).eq('id',targetId).select('id').maybeSingle();
+      }
       if (action === 'approve-video' || action === 'reject-video') {
         const status = action === 'approve-video' ? 'approved' : 'rejected';
         result = await supabase.from('videos').update({status,reviewed_by:user.id,reviewed_at:new Date().toISOString(),rejection_reason:status === 'rejected' ? 'يرجى مراجعة إرشادات النشر وإعادة المحاولة.' : null}).eq('id',targetId).eq('status','pending').select('id').maybeSingle();
@@ -435,11 +498,13 @@
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
-      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.'};
+      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
       else if (action === 'approve-video' || action === 'reject-video') await renderClips();
+      else if (action === 'cancel-room') await renderRooms();
+      else if (action.startsWith('report-') || action.endsWith('-report')) await renderSettings();
       else await renderSocialInbox();
       messageSocial(messages[action] || 'تم تحديث الإجراء.');
     } catch (error) {
@@ -456,5 +521,5 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderUpload, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderUpload, renderRooms, renderLive, renderSettings, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
 })();
