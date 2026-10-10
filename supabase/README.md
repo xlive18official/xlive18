@@ -4,7 +4,7 @@ This directory contains the versioned SQL migration history for XLive 18.
 
 ## Current linked project
 
-The schema and migrations through `0023_saved_video_bookmarks.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. The GitHub Actions workflow has been added, but a successful CI run and end-to-end browser tests have not yet been confirmed.
+The schema and migrations through `0024_index_saved_video_foreign_key.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. The GitHub Actions workflow has been added, but a successful CI run and end-to-end browser tests have not yet been confirmed.
 
 ## Reproducing the database in a fresh project
 
