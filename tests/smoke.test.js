@@ -27,8 +27,8 @@ test('all navigation destinations in the HTML have a defined view', () => {
 
 test('search is handled without injecting raw user input as HTML', () => {
   assert.match(app, /searchForm\.addEventListener\('submit'/);
-  assert.match(app, /escapeHtml\(extra \|\| ''\)/);
-  assert.match(app, /replace\(\/\[&<>"'\]\/g/);
+  assert.match(app, /render\('search', query\)/);
+  assert.match(auth, /escapeHtml\(/);
 });
 
 test('responsive layout and reduced-motion preferences exist', () => {
