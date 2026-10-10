@@ -180,7 +180,7 @@
         current ? supabase.from('user_blocks').select('blocked_id').eq('blocker_id', current) : Promise.resolve({data: []})
       ]);
       const following = new Set((follows || []).map(x => x.followed_id));
-      const requested = new Map((requests || []).map(x => [x.target_id, x.status]));
+      const requested = new Map((requests || []).filter(x => x.status === 'pending').map(x => [x.target_id, x.status]));
       const blocked = new Set((blocks || []).map(x => x.blocked_id));
       panel.innerHTML = data.map(p => {
         const name = escapeHtml(p.display_name || p.username);
@@ -218,7 +218,7 @@
           const byId = new Map((profiles || []).map(p => [p.id,p]));
           requestsPanel.innerHTML = requests.map(r => {
             const p = byId.get(r.requester_id);
-            return '<article class="social-user"><div><strong>' + escapeHtml(p?.display_name || p?.username || 'عضو') + '</strong><p>' + (p?.username ? '@' + escapeHtml(p.username) + ' · ' : '') + 'طلب متابعة</p></div><div class="social-actions"><button class="button button-primary" data-social-action="accept" data-user-id="' + r.requester_id + '">قبول</button><button class="button button-secondary" data-social-action="reject" data-user-id="' + r.requester_id + '">رفض</button></div></article>';
+            return '<article class="social-user"><div><strong>' + escapeHtml(p?.display_name || p?.username || ('حساب ' + r.requester_id.slice(0,8))) + '</strong><p>' + (p?.username ? '@' + escapeHtml(p.username) + ' · ' : '') + 'طلب متابعة</p></div><div class="social-actions"><button class="button button-primary" data-social-action="accept" data-user-id="' + r.requester_id + '">قبول</button><button class="button button-secondary" data-social-action="reject" data-user-id="' + r.requester_id + '">رفض</button></div></article>';
           }).join('');
 
         }
@@ -242,17 +242,25 @@
       let result;
       if (action === 'follow') result = await supabase.from('follows').insert({follower_id:user.id, followed_id:targetId});
       else if (action === 'unfollow') result = await supabase.from('follows').delete().eq('follower_id',user.id).eq('followed_id',targetId);
-      else if (action === 'request') result = await supabase.from('follow_requests').insert({requester_id:user.id,target_id:targetId,status:'pending'});
+      else if (action === 'request') {
+        const {data: existing, error: lookupError} = await supabase.from('follow_requests').select('status').eq('requester_id',user.id).eq('target_id',targetId).maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing && existing.status !== 'pending') {
+          const {error: deleteError} = await supabase.from('follow_requests').delete().eq('requester_id',user.id).eq('target_id',targetId);
+          if (deleteError) throw deleteError;
+        }
+        if (!existing || existing.status !== 'pending') result = await supabase.from('follow_requests').insert({requester_id:user.id,target_id:targetId,status:'pending'});
+      }
       else if (action === 'cancel-request') result = await supabase.from('follow_requests').delete().eq('requester_id',user.id).eq('target_id',targetId);
       else if (action === 'accept' || action === 'reject') result = await supabase.from('follow_requests').update({status:action === 'accept' ? 'accepted' : 'rejected'}).eq('requester_id',targetId).eq('target_id',user.id).eq('status','pending');
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
       const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.'};
-      messageSocial(messages[action] || 'تم تحديث الإجراء.');
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       await renderSocialInbox();
+      messageSocial(messages[action] || 'تم تحديث الإجراء.');
     } catch (error) {
       const msg = String(error?.message || '');
       messageSocial(/duplicate key/i.test(msg) ? 'هذا الإجراء موجود مسبقاً.' : 'تعذر تنفيذ الإجراء. قد تكون هناك صلاحيات أو إعدادات ناقصة.');
