@@ -59,3 +59,13 @@
 .clip-card-body>small{font-size:10px;color:var(--muted)}
 #video-file{width:100%;padding:12px;border:1px dashed var(--line);border-radius:10px;background:var(--surface);color:var(--text)}
 #video-upload-submit:disabled{opacity:.65;cursor:wait}
+
+/* Room requests and report moderation */
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:12px;margin-top:18px}
+.room-card,.report-card{display:grid;gap:10px;padding:15px;border:1px solid var(--line);border-radius:13px;background:var(--panel);min-width:0}
+.room-card>p,.report-card>p{margin:0;color:var(--muted);font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.room-meta{display:flex;gap:8px;flex-wrap:wrap}
+.room-meta span{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 8px}
+.report-inbox{display:grid;gap:12px;margin-top:16px}
+.report-inbox h2{font-size:15px}
+.report-card small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}
