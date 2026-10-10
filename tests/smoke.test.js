@@ -208,6 +208,18 @@ test('admins can remove previously approved videos and owners are notified', () 
   assert.match(removal, /when new\.status = 'removed' then 'تمت إزالة الفيديو'/i);
 });
 
+
+test('saved videos are private to the owner and only approved public videos can be saved', () => {
+  const saved = readFileSync('supabase/migrations/0023_saved_video_bookmarks.sql', 'utf8');
+  assert.match(saved, /alter table public\.saved_videos enable row level security/i);
+  assert.match(saved, /user_id = \(select auth\.uid\(\)\)/i);
+  assert.match(saved, /v\.status = 'approved'/i);
+  assert.match(saved, /v\.is_paid = false/i);
+  assert.match(saved, /v\.visibility = 'public'/i);
+  assert.match(auth, /from\('saved_videos'\)\.insert/);
+  assert.match(auth, /renderSaved/);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
