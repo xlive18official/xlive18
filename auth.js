@@ -375,7 +375,7 @@
         }
         const status = v.status === 'approved' ? 'مقبول' : v.status === 'pending' ? 'قيد المراجعة' : v.status === 'rejected' ? 'مرفوض' : 'مزال';
         const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
-        const review = admin && v.status === 'pending' ? '<div class="social-actions"><button class="button button-primary" data-social-action="approve-video" data-video-id="' + v.id + '">موافقة ونشر</button><button class="button button-danger" data-social-action="reject-video" data-video-id="' + v.id + '">رفض</button></div>' : '';
+        const review = admin && v.status === 'pending' ? '<div class="social-actions"><button class="button button-primary" data-social-action="approve-video" data-video-id="' + v.id + '">موافقة ونشر</button><button class="button button-danger" data-social-action="reject-video" data-video-id="' + v.id + '">رفض</button></div>' : admin && v.status === 'approved' ? '<button class="button button-danger" data-social-action="remove-video" data-video-id="' + v.id + '">إزالة الفيديو</button>' : '';
         const report = user && user.id !== v.owner_id ? '<button class="button button-secondary" data-social-action="report-video" data-video-id="' + v.id + '">إبلاغ عن الفيديو</button>' : '';
         const reason = v.status === 'rejected' && v.owner_id === user?.id && v.rejection_reason ? '<p class="field-help">سبب الرفض: ' + escapeHtml(v.rejection_reason) + '</p>' : '';
         return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + report + '</div></article>';
@@ -476,9 +476,10 @@
         const status = action === 'review-report' ? 'reviewing' : action === 'resolve-report' ? 'resolved' : 'dismissed';
         result = await supabase.from('reports').update({status,moderator_id:user.id,moderator_note:status === 'resolved' ? 'تمت مراجعة البلاغ واتخاذ الإجراء المناسب.' : status === 'dismissed' ? 'تمت مراجعة البلاغ وإغلاقه دون إجراء إضافي.' : 'قيد المراجعة.',resolved_at:status === 'reviewing' ? null : new Date().toISOString()}).eq('id',targetId).select('id').maybeSingle();
       }
-      if (action === 'approve-video' || action === 'reject-video') {
-        const status = action === 'approve-video' ? 'approved' : 'rejected';
-        result = await supabase.from('videos').update({status,reviewed_by:user.id,reviewed_at:new Date().toISOString(),rejection_reason:status === 'rejected' ? 'يرجى مراجعة إرشادات النشر وإعادة المحاولة.' : null}).eq('id',targetId).eq('status','pending').select('id').maybeSingle();
+      if (action === 'approve-video' || action === 'reject-video' || action === 'remove-video') {
+        const status = action === 'approve-video' ? 'approved' : action === 'remove-video' ? 'removed' : 'rejected';
+        const expectedStatus = action === 'remove-video' ? 'approved' : 'pending';
+        result = await supabase.from('videos').update({status,reviewed_by:user.id,reviewed_at:new Date().toISOString(),rejection_reason:status === 'approved' ? null : action === 'remove-video' ? 'تمت إزالة الفيديو بعد المراجعة أو البلاغ.' : 'يرجى مراجعة إرشادات النشر وإعادة المحاولة.'}).eq('id',targetId).eq('status',expectedStatus).select('id').maybeSingle();
         if (!result.data && !result.error) { messageSocial('لم يتم تحديث الفيديو؛ ربما تمت مراجعته مسبقاً.'); return; }
       }
       else if (action === 'mark-notification-read') result = await supabase.from('notifications').update({read_at:new Date().toISOString()}).eq('id',targetId).eq('recipient_id',user.id);
@@ -499,11 +500,11 @@
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
-      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
+      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','remove-video':'تمت إزالة الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
-      else if (action === 'approve-video' || action === 'reject-video' || action === 'report-video') await renderClips();
+      else if (action === 'approve-video' || action === 'reject-video' || action === 'remove-video' || action === 'report-video') await renderClips();
       else if (action === 'report-message') await renderMessages(activeConversationId);
       else if (action === 'cancel-room') await renderRooms();
       else if (['review-report','resolve-report','dismiss-report'].includes(action)) await renderSettings();
