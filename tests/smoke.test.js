@@ -66,7 +66,7 @@ test('blocking a user removes existing follows in both directions', () => {
 });
 
 
-test('private profiles cannot be followed until follow requests are implemented', () => {
+test('private profiles require requests and cannot be followed directly', () => {
   const followPrivacy = readFileSync('supabase/migrations/0007_restrict_follows_to_public_profiles.sql', 'utf8');
   assert.match(followPrivacy, /private\.is_profile_public\(followed_id\)/);
   assert.match(followPrivacy, /and not private\.is_blocked_pair\(follower_id, followed_id\)/);
@@ -150,7 +150,8 @@ test('messages, follow requests, and notifications have RLS enabled in their mig
   const messaging = readFileSync('supabase/migrations/0015_direct_messages_and_social_notifications.sql', 'utf8');
   assert.match(requests, /alter table public\.follow_requests enable row level security/i);
   assert.match(messaging, /alter table public\.messages enable row level security/i);
-  assert.match(messaging, /grant select on public\.notifications to authenticated/i.test(schema) ? /notifications/ : /alter table public\.notifications/i);
+  assert.match(schema, /alter table public\.notifications enable row level security;/i);
+  assert.match(messaging, /alter table public\.notifications drop constraint if exists notifications_kind_check/i);
 });
 
 
