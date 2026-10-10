@@ -86,7 +86,7 @@
       const supabase = ensureClient(); await syncCurrentUser(supabase);
       if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
       const button = document.getElementById('room-create-submit'); button.disabled = true; button.textContent = 'جارٍ الإرسال…';
-      const room = {host_id:user.id,title:document.getElementById('room-title').value.trim(),description:document.getElementById('room-description').value.trim(),media_mode:document.getElementById('room-mode').value,visibility:document.getElementById('room-visibility').value,capacity:Number(document.getElementById('room-capacity').value),status:'pending',provider_room_ref:null};
+      const room = {host_id:user.id,title:document.getElementById('room-title').value.trim(),description:document.getElementById('room-description').value.trim(),media_mode:document.getElementById('room-mode').value,visibility:document.getElementById('room-visibility').value,capacity:Number(document.getElementById('room-capacity').value),status:'pending'};
       const {error} = await supabase.from('rooms').insert(room);
       if (error) { messageSocial('تعذر إرسال طلب الغرفة. تحقق من الحقول والصلاحيات.'); console.error('XLive room create error',error); button.disabled=false; button.textContent='إرسال طلب الغرفة'; return; }
       await renderRooms(); messageSocial('تم حفظ طلب الغرفة. لا يمكن بدء البث حتى إعداد مزوّد الاتصال.'); return;
