@@ -151,6 +151,10 @@
       panel.innerHTML = '<p class="field-help">خدمة الحسابات غير مهيأة بعد.</p>';
       return;
     }
+    if (!user) {
+      panel.innerHTML = '<p class="field-help">سجّل الدخول أولاً للبحث عن الحسابات وإرسال طلبات المتابعة.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button>';
+      return;
+    }
     panel.innerHTML = '<p class="field-help">جارٍ البحث…</p>';
     try {
       const {data, error} = await supabase.rpc('search_profiles', {search_term: String(term).trim()});
