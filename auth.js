@@ -27,10 +27,17 @@
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
-  function renderProfile() {
+  async function renderProfile() {
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
     if (user) {
-      root.innerHTML = '<div class="view-header"><div><h1>ملفي الشخصي</h1><p>إدارة حسابك</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><h2>أهلاً بك في XLive 18</h2><p>' + escapeHtml(user.email) + '</p><p class="field-help">تم تسجيل الدخول. ميزات الملف الشخصي الأخرى قيد التطوير.</p><button class="button button-secondary" id="auth-signout" type="button">تسجيل الخروج</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
+      let profile = { display_name: '', username: '', bio: '', is_private: false };
+      const supabase = ensureClient();
+      if (supabase) {
+        const { data } = await supabase.from('profiles').select('display_name,username,bio,is_private').eq('id', user.id).maybeSingle();
+        if (data) profile = data;
+      }
+      if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]') || !user) return;
+      root.innerHTML = '<div class="view-header"><div><h1>ملفي الشخصي</h1><p>تعديل بياناتك المحفوظة</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><p>' + escapeHtml(user.email) + '</p><form id="profile-form" class="form-stack"><div class="field"><label for="profile-username">اسم المستخدم</label><input id="profile-username" value="' + escapeHtml(profile.username) + '" disabled><p class="field-help">اسم المستخدم يُنشأ تلقائياً حالياً.</p></div><div class="field"><label for="profile-display-name">الاسم الظاهر</label><input id="profile-display-name" maxlength="60" value="' + escapeHtml(profile.display_name) + '" placeholder="كيف تريد أن تظهر للآخرين؟"></div><div class="field"><label for="profile-bio">نبذة عنك</label><textarea id="profile-bio" maxlength="500" rows="4" placeholder="اكتب نبذة قصيرة">' + escapeHtml(profile.bio) + '</textarea></div><label class="auth-age"><input id="profile-private" type="checkbox" ' + (profile.is_private ? 'checked' : '') + '> جعل حسابي خاصاً</label><button class="button button-primary" id="profile-save" type="submit">حفظ التغييرات</button></form><button class="button button-secondary" id="auth-signout" type="button">تسجيل الخروج</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
       return;
     }
     root.innerHTML = '<div class="view-header"><div><h1>حسابك على XLive 18</h1><p>إنشاء حساب أو تسجيل الدخول</p></div></div><div class="notice-panel"><span class="notice-icon" aria-hidden="true">ⓘ</span><div><strong>للبالغين 18 عاماً أو أكثر</strong><p>قد تحتاج إلى تأكيد بريدك الإلكتروني قبل تسجيل الدخول.</p></div></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><button class="text-button" id="auth-reset" type="button">نسيت كلمة المرور؟</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div>';
@@ -94,6 +101,31 @@
   });
   document.addEventListener('click', event => {
     if (event.target.closest('[data-view="profile"]')) setTimeout(renderProfile, 0);
+  });
+  document.addEventListener('submit', async event => {
+    if (event.target.id !== 'profile-form') return;
+    event.preventDefault();
+    const supabase = ensureClient();
+    if (!supabase || !user) { feedback('سجّل الدخول أولاً.'); return; }
+    const button = document.getElementById('profile-save');
+    button.disabled = true;
+    button.textContent = 'جارٍ الحفظ…';
+    const values = {
+      display_name: document.getElementById('profile-display-name').value.trim(),
+      bio: document.getElementById('profile-bio').value.trim(),
+      is_private: document.getElementById('profile-private').checked
+    };
+    try {
+      const { error } = await supabase.from('profiles').update(values).eq('id', user.id);
+      if (error) throw error;
+      feedback('تم حفظ الملف الشخصي.');
+    } catch (error) {
+      feedback('تعذر حفظ الملف. تأكد من اتصال قاعدة البيانات وحاول مجدداً.');
+      console.error('XLive profile update error', error);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'حفظ التغييرات';
+    }
   });
   if (window.supabase && config) ensureClient();
   window.XLiveAuth = { render: renderProfile, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
