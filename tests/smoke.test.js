@@ -182,6 +182,18 @@ test('report submission and admin review are wired to RLS-protected reports', ()
   assert.match(auth, /data-social-action="report-message"/);
 });
 
+
+test('client table grants are least-privilege and do not expose server-only columns', () => {
+  const grants = readFileSync('supabase/migrations/0019_tighten_table_and_storage_grants.sql', 'utf8');
+  const inserts = readFileSync('supabase/migrations/0020_restrict_client_insert_columns.sql', 'utf8');
+  assert.match(grants, /revoke all privileges on table public\.profiles[\s\S]*?from anon, authenticated/i);
+  assert.match(grants, /grant update \(read_at\) on public\.messages to authenticated/i);
+  assert.match(inserts, /grant insert \(owner_id, title, description, storage_path, status, visibility, is_paid\) on public\.videos/i);
+  assert.match(inserts, /grant insert \(reporter_id, target_type, target_id, reason, details, status\) on public\.reports/i);
+  assert.match(inserts, /grant insert \(sender_id, recipient_id, body\) on public\.messages/i);
+  assert.match(inserts, /grant insert \(requester_id, target_id, status\) on public\.follow_requests/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
