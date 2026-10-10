@@ -75,3 +75,10 @@ test('account UI uses Supabase Auth and requires an 18+ acknowledgement for sign
   assert.match(auth, /age_confirmed:\s*true/);
   assert.match(auth, /aria-live="polite"/);
 });
+
+test('authenticated profile editing is scoped to the current user', () => {
+  assert.match(auth, /from\('profiles'\)\.select\('display_name,username,bio,is_private'\)/);
+  assert.match(auth, /from\('profiles'\)\.update\(values\)\.eq\('id', user\.id\)/);
+  assert.match(auth, /id="profile-private" type="checkbox"/);
+  assert.match(auth, /maxlength="500"/);
+});
