@@ -236,6 +236,14 @@ test('account UI uses Supabase Auth and requires an 18+ acknowledgement for sign
   assert.match(auth, /aria-live="polite"/);
 });
 
+
+test('password recovery supports updating the password after a recovery link', () => {
+  assert.match(auth, /PASSWORD_RECOVERY/);
+  assert.match(auth, /id="password-update-form"/);
+  assert.match(auth, /auth\.updateUser\(\{password\}\)/);
+  assert.match(auth, /كلمتا المرور غير متطابقتين/);
+});
+
 test('authenticated profile editing is scoped to the current user', () => {
   assert.match(auth, /from\('profiles'\)\.select\('display_name,username,bio,is_private'\)/);
   assert.match(auth, /from\('profiles'\)\.update\(values\)\.eq\('id', user\.id\)/);
