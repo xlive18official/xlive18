@@ -48,7 +48,9 @@ create table if not exists public.videos (
   rejection_reason text check (rejection_reason is null or char_length(rejection_reason) <= 1000),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint paid_video_has_price check (is_paid = false or price_cents is not null)
+  constraint paid_video_has_price check (is_paid = false or price_cents is not null),
+  constraint video_storage_path_owner check (storage_path like owner_id::text || '/%'),
+  constraint video_preview_path_owner check (preview_path is null or preview_path like owner_id::text || '/%')
 );
 
 create index if not exists videos_public_feed_idx on public.videos (created_at desc)
