@@ -583,7 +583,7 @@
       if (result?.error) throw result.error;
       const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','remove-video':'تمت إزالة الفيديو وإبلاغ صاحبه.','save-video':'تم حفظ الفيديو.','remove-saved-video':'تمت إزالة الفيديو من المحفوظات.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
-      if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
+      if (document.getElementById('account-search-results') && searchTerm && action !== 'report-profile') await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
       else if (action === 'save-video' || action === 'approve-video' || action === 'reject-video' || action === 'remove-video' || action === 'report-video') await renderClips();
       else if (action === 'remove-saved-video') {
