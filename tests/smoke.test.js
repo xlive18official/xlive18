@@ -203,7 +203,7 @@ test('client table grants are least-privilege and do not expose server-only colu
 test('admins can remove previously approved videos and owners are notified', () => {
   const removal = readFileSync('supabase/migrations/0022_support_removal_of_approved_videos.sql', 'utf8');
   assert.match(auth, /data-social-action="remove-video"/);
-  assert.match(auth, /status = 'removed'/);
+  assert.match(auth, /action === 'remove-video' \? 'removed'/);
   assert.match(removal, /new\.status in \('approved','rejected','removed'\)/i);
   assert.match(removal, /when new\.status = 'removed' then 'تمت إزالة الفيديو'/i);
 });
