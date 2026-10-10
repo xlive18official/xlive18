@@ -7,6 +7,7 @@ const app = readFileSync('app.js', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
 const schema = readFileSync('supabase/migrations/0001_initial_schema.sql', 'utf8');
 const storage = readFileSync('supabase/migrations/0002_private_video_storage.sql', 'utf8');
+const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
 
 test('document is Arabic RTL and links the local app assets', () => {
   assert.match(html, /<html lang="ar" dir="rtl">/);
@@ -47,6 +48,13 @@ test('video publication and room state are restricted by database policies', () 
   assert.match(schema, /provider_room_ref is null/);
   assert.match(schema, /grant select on public\.purchases to authenticated/);
   assert.doesNotMatch(schema, /create policy "purchases_insert/);
+});
+
+
+test('private profiles are readable only by their owner', () => {
+  assert.match(schema, /using \(id = \(select auth\.uid\(\)\) or is_private = false\);/);
+  assert.match(profilePrivacy, /for select to anon, authenticated[\s\S]*?using \(id = \(select auth\.uid\(\)\) or is_private = false\);/);
+  assert.doesNotMatch(profilePrivacy, /using \(true\)/i);
 });
 
 test('video storage bucket is private and scoped to the authenticated owner', () => {
