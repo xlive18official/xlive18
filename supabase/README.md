@@ -4,7 +4,7 @@ This directory contains the versioned SQL migration history for XLive 18.
 
 ## Current linked project
 
-The schema and migrations through `0024_index_saved_video_foreign_key.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. The GitHub Actions workflow has been added, but a successful CI run and end-to-end browser tests have not yet been confirmed.
+The schema and migrations through `0024_index_saved_video_foreign_key.sql` have been applied to the linked Supabase project used by this repository. The live database has RLS enabled on the application tables and the private video bucket. GitHub Actions currently passes JavaScript syntax checks and smoke tests. End-to-end browser tests and real-account acceptance tests have not been confirmed. The base schema and private-storage setup were originally applied outside the migration registry, so check the actual schema as well as `supabase_migrations.schema_migrations` when reproducing this project.
 
 ## Reproducing the database in a fresh project
 
