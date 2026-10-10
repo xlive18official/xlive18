@@ -89,6 +89,9 @@
     if (view === 'notifications') window.XLiveAuth?.renderNotifications();
     if (view === 'clips') window.XLiveAuth?.renderClips();
     if (view === 'upload') window.XLiveAuth?.renderUpload();
+    if (view === 'rooms') window.XLiveAuth?.renderRooms();
+    if (view === 'live') window.XLiveAuth?.renderLive();
+    if (view === 'settings') window.XLiveAuth?.renderSettings();
     if (view === 'messages') window.XLiveAuth?.renderMessages();
     if (view === 'notifications') window.XLiveAuth?.renderNotifications();
   }
