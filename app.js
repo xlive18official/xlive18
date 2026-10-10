@@ -87,6 +87,10 @@
     if (view === 'search') window.XLiveAuth?.renderSearch(extra);
     if (view === 'messages') window.XLiveAuth?.renderMessages();
     if (view === 'notifications') window.XLiveAuth?.renderNotifications();
+    if (view === 'clips') window.XLiveAuth?.renderClips();
+    if (view === 'upload') window.XLiveAuth?.renderUpload();
+    if (view === 'messages') window.XLiveAuth?.renderMessages();
+    if (view === 'notifications') window.XLiveAuth?.renderNotifications();
   }
 
   function homeMarkup() {
