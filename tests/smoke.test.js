@@ -65,6 +65,14 @@ test('blocking a user removes existing follows in both directions', () => {
   assert.match(blockMigration, /revoke all on function public\.remove_follows_on_block\(\) from public, anon, authenticated/i);
 });
 
+
+test('private profiles cannot be followed until follow requests are implemented', () => {
+  const followPrivacy = readFileSync('supabase/migrations/0007_restrict_follows_to_public_profiles.sql', 'utf8');
+  assert.match(followPrivacy, /private\.is_profile_public\(followed_id\)/);
+  assert.match(followPrivacy, /and not private\.is_blocked_pair\(follower_id, followed_id\)/);
+  assert.match(followPrivacy, /p\.is_private = false/);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
