@@ -370,6 +370,33 @@
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / SETTINGS</p><h1>الإعدادات والأمان</h1><p>إدارة البلاغات والحسابات.</p></div><button class="back-home" data-view="profile">الملف الشخصي ←</button></div><div class="simple-panel"><h2>الخصوصية</h2><p>تغيير خصوصية الحساب متاح من صفحة الملف الشخصي. الحظر يوقف الرسائل ويحذف المتابعات وطلبات المتابعة بين الطرفين.</p><button class="button button-secondary" data-view="profile">إعدادات الملف الشخصي</button></div><section class="simple-panel report-inbox"><h2>' + (admin ? 'لوحة مراجعة البلاغات' : 'بلاغاتي') + '</h2>' + reportList + '</section><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
   }
 
+
+  async function renderSaved() {
+    const supabase = ensureClient();
+    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>المحفوظات</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
+    await syncCurrentUser(supabase);
+    if (!user) {
+      root.innerHTML = '<div class="view-header"><h1>المحفوظات</h1></div><div class="simple-panel"><p>سجّل الدخول لمشاهدة الفيديوهات المحفوظة.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      return;
+    }
+    try {
+      const {data: saved, error} = await supabase.from('saved_videos').select('video_id,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(100);
+      if (error) throw error;
+      const ids = (saved || []).map(x => x.video_id);
+      const {data: videos, error: videoError} = ids.length ? await supabase.from('videos').select('id,title,description,storage_path,created_at').in('id',ids) : {data:[],error:null};
+      if (videoError) throw videoError;
+      const visible = videos || [];
+      const cards = await Promise.all(visible.map(async v => {
+        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path,3600);
+        return '<article class="clip-card">' + (signed?.signedUrl ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح</div>') + '<div class="clip-card-body"><strong>' + escapeHtml(v.title) + '</strong><p>' + escapeHtml(v.description || '') + '</p><button class="button button-secondary" data-social-action="remove-saved-video" data-video-id="' + v.id + '">إزالة من المحفوظات</button></div></article>';
+      }));
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / SAVED</p><h1>المحفوظات</h1><p>الفيديوهات العامة المقبولة فقط تظهر هنا.</p></div><button class="back-home" data-view="clips">العودة للمقاطع ←</button></div><div id="saved-video-list" class="clip-grid">' + (cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد فيديوهات محفوظة متاحة</h3><p>' + (ids.length ? 'قد تكون بعض الفيديوهات أُزيلت أو لم تعد متاحة.' : 'احفظ فيديو عاماً من صفحة المقاطع ليظهر هنا.') + '</p></div>') + '</div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
+    } catch (error) {
+      root.innerHTML = '<div class="view-header"><h1>المحفوظات</h1></div><div class="simple-panel"><p>تعذر تحميل المحفوظات.</p></div>';
+      console.error('XLive saved videos error',error);
+    }
+  }
+
   async function renderUpload() {
     const supabase = ensureClient();
     if (!supabase) { root.innerHTML = '<div class="view-header"><h1>رفع فيديو</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
@@ -389,6 +416,8 @@
       const {data, error} = await supabase.from('videos').select('id,owner_id,title,description,storage_path,status,visibility,is_paid,created_at,rejection_reason').order('created_at',{ascending:false}).limit(40);
       if (error) throw error;
       const videos = data || [];
+      const {data: savedRows} = user ? await supabase.from('saved_videos').select('video_id').eq('user_id',user.id) : {data:[]};
+      const savedIds = new Set((savedRows || []).map(row => row.video_id));
       const cards = await Promise.all(videos.map(async v => {
         let src = '';
         if ((user && (user.id === v.owner_id || admin)) || (v.status === 'approved' && !v.is_paid && v.visibility === 'public')) {
@@ -399,8 +428,9 @@
         const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
         const review = admin && v.status === 'pending' ? '<div class="social-actions"><button class="button button-primary" data-social-action="approve-video" data-video-id="' + v.id + '">موافقة ونشر</button><button class="button button-danger" data-social-action="reject-video" data-video-id="' + v.id + '">رفض</button></div>' : admin && v.status === 'approved' ? '<button class="button button-danger" data-social-action="remove-video" data-video-id="' + v.id + '">إزالة الفيديو</button>' : '';
         const report = user && user.id !== v.owner_id ? '<button class="button button-secondary" data-social-action="report-video" data-video-id="' + v.id + '">إبلاغ عن الفيديو</button>' : '';
+        const savedAction = user && v.status === 'approved' && !v.is_paid && v.visibility === 'public' ? '<button class="button button-secondary" data-social-action="' + (savedIds.has(v.id) ? 'remove-saved-video' : 'save-video') + '" data-video-id="' + v.id + '">' + (savedIds.has(v.id) ? 'إزالة من المحفوظات' : 'حفظ الفيديو') + '</button>' : '';
         const reason = v.status === 'rejected' && v.owner_id === user?.id && v.rejection_reason ? '<p class="field-help">سبب الرفض: ' + escapeHtml(v.rejection_reason) + '</p>' : '';
-        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + report + '</div></article>';
+        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + report + savedAction + '</div></article>';
       }));
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CLIPS</p><h1>المقاطع</h1><p>تظهر المقاطع العامة بعد اجتياز المراجعة فقط.</p></div><button class="button button-primary" data-view="upload">رفع فيديو</button></div>' + (admin ? '<div class="notice-panel"><div><strong>وضع المراجعة</strong><p>تظهر لك الفيديوهات المعلّقة وأزرار الموافقة أو الرفض بصفتك مديراً.</p></div></div>' : '') + '<div class="clip-grid">' + (cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد مقاطع بعد</h3><p>ستظهر هنا الفيديوهات المقبولة. يمكنك رفع فيديو لإرساله للمراجعة.</p></div>') + '</div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
     } catch (error) {
@@ -492,6 +522,8 @@
     try {
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
+      if (action === 'save-video') result = await supabase.from('saved_videos').insert({user_id:user.id,video_id:targetId});
+      else if (action === 'remove-saved-video') result = await supabase.from('saved_videos').delete().eq('user_id',user.id).eq('video_id',targetId);
       if (action === 'cancel-room') result = await supabase.from('rooms').update({status:'cancelled'}).eq('id',targetId).eq('host_id',user.id).eq('status','pending');
       else if (action === 'report-video' || action === 'report-profile' || action === 'report-message') result = await supabase.from('reports').insert({reporter_id:user.id,target_type:action === 'report-video' ? 'video' : action === 'report-message' ? 'message' : 'profile',target_id:targetId,reason:action === 'report-video' ? 'محتوى غير مناسب' : action === 'report-message' ? 'رسالة غير مناسبة' : 'سلوك مسيء',details:'تم الإبلاغ من واجهة التطبيق.',status:'open'});
       else if (action === 'review-report' || action === 'resolve-report' || action === 'dismiss-report') {
@@ -522,11 +554,14 @@
       else if (action === 'block') result = await supabase.from('user_blocks').insert({blocker_id:user.id,blocked_id:targetId});
       else if (action === 'unblock') result = await supabase.from('user_blocks').delete().eq('blocker_id',user.id).eq('blocked_id',targetId);
       if (result?.error) throw result.error;
-      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','remove-video':'تمت إزالة الفيديو وإبلاغ صاحبه.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
+      const messages = {follow:'تمت المتابعة.',unfollow:'تم إلغاء المتابعة.',request:'تم إرسال طلب المتابعة.', 'cancel-request':'تم إلغاء طلب المتابعة.',accept:'تم قبول الطلب.',reject:'تم رفض الطلب.',block:'تم حظر الحساب وإزالة علاقات المتابعة.',unblock:'تم إلغاء الحظر.','mark-notification-read':'تم تحديث الإشعار.','approve-video':'تمت الموافقة على الفيديو.','reject-video':'تم رفض الفيديو وإبلاغ صاحبه.','remove-video':'تمت إزالة الفيديو وإبلاغ صاحبه.','save-video':'تم حفظ الفيديو.','remove-saved-video':'تمت إزالة الفيديو من المحفوظات.','cancel-room':'تم إلغاء طلب الغرفة.','report-video':'تم إرسال البلاغ للمراجعة.','report-profile':'تم إرسال البلاغ للمراجعة.','report-message':'تم إرسال البلاغ للمراجعة.','review-report':'تم نقل البلاغ إلى قيد المراجعة.','resolve-report':'تم حل البلاغ.','dismiss-report':'تم إغلاق البلاغ.'};
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
-      else if (action === 'approve-video' || action === 'reject-video' || action === 'remove-video' || action === 'report-video') await renderClips();
+      else if (action === 'save-video' || action === 'approve-video' || action === 'reject-video' || action === 'remove-video' || action === 'report-video') await renderClips();
+      else if (action === 'remove-saved-video') {
+        if (document.getElementById('saved-video-list')) await renderSaved(); else await renderClips();
+      }
       else if (action === 'report-message') await renderMessages(activeConversationId);
       else if (action === 'cancel-room') await renderRooms();
       else if (['review-report','resolve-report','dismiss-report'].includes(action)) await renderSettings();
@@ -547,5 +582,5 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderUpload, renderRooms, renderLive, renderSettings, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
 })();
