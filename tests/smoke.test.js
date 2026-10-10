@@ -92,13 +92,17 @@ test('account search and social controls call Supabase actions', () => {
   assert.match(auth, /from\('user_blocks'\)\.insert/);
   assert.match(auth, /data-social-action="accept"/);
 });
-test('account discovery RPC exposes only minimal profile fields', () => {
+test('account discovery RPC exposes minimal fields and is hardened in the latest migration', () => {
   const discovery = readFileSync('supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql', 'utf8');
+  const hardening = readFileSync('supabase/migrations/0013_tighten_profile_search_and_follow_request_transitions.sql', 'utf8');
   assert.match(discovery, /returns table \(id uuid, username text, display_name text, is_private boolean\)/i);
-  assert.match(discovery, /grant execute on function public\.search_profiles\(text\) to anon, authenticated/i);
-  assert.match(discovery, /revoke all on function public\.search_profiles\(text\) from public/i);
+  assert.match(hardening, /revoke all on function public\.search_profiles\(text\) from public, anon/i);
+  assert.match(hardening, /grant execute on function public\.search_profiles\(text\) to authenticated/i);
+  assert.match(hardening, /auth\.uid\(\) is not null/i);
+  assert.match(hardening, /left\(lower\(p\.username\), char_length\(trim\(search_term\)\)\)/i);
+  assert.match(hardening, /old\.status <> 'pending'/i);
+  assert.match(hardening, /new\.target_id <> auth\.uid\(\)/i);
 });
-
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
