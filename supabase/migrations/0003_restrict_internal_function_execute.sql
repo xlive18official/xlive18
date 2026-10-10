@@ -10,6 +10,12 @@ revoke execute on function public.rls_auto_enable() from public, anon, authentic
 create schema if not exists private;
 revoke all on schema private from public, anon;
 grant usage on schema private to authenticated;
-alter function public.is_blocked_pair(uuid, uuid) set schema private;
+do $$
+begin
+  if to_regprocedure('public.is_blocked_pair(uuid,uuid)') is not null then
+    alter function public.is_blocked_pair(uuid, uuid) set schema private;
+  end if;
+end;
+$$;
 revoke all on function private.is_blocked_pair(uuid, uuid) from public, anon;
 grant execute on function private.is_blocked_pair(uuid, uuid) to authenticated;
