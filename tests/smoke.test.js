@@ -228,6 +228,12 @@ test('homepage loads only approved free public videos from Supabase', () => {
   assert.match(auth, /function renderHomeFeed\(\)/);
 });
 
+
+test('saved video foreign key has an index for deletion cascades', () => {
+  const savedIndex = readFileSync('supabase/migrations/0024_index_saved_video_foreign_key.sql', 'utf8');
+  assert.match(savedIndex, /create index if not exists saved_videos_video_id_idx on public\.saved_videos \(video_id\)/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
