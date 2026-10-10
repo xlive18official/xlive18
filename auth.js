@@ -256,7 +256,7 @@
         else if (following.has(p.id)) action = '<button class="button button-secondary" data-social-action="unfollow" data-user-id="' + p.id + '">إلغاء المتابعة</button>';
         else if (requested.get(p.id) === 'pending') action = '<span class="field-help">طلب المتابعة قيد الانتظار</span><button class="button button-secondary" data-social-action="cancel-request" data-user-id="' + p.id + '">إلغاء الطلب</button>';
         else action = '<button class="button button-primary" data-social-action="' + (p.is_private ? 'request' : 'follow') + '" data-user-id="' + p.id + '">' + (p.is_private ? 'طلب متابعة' : 'متابعة') + '</button>';
-        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + action + (current && current !== p.id && (following.has(p.id) || followsBack.has(p.id)) ? '<button class="button button-secondary" data-social-action="message" data-user-id="' + p.id + '">رسالة</button>' : '') + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + '</div></article>';
+        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + action + (current && current !== p.id && (following.has(p.id) || followsBack.has(p.id)) ? '<button class="button button-secondary" data-social-action="message" data-user-id="' + p.id + '">رسالة</button>' : '') + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + (current && current !== p.id ? '<button class="button button-secondary" data-social-action="report-profile" data-user-id="' + p.id + '">إبلاغ</button>' : '') + '</div></article>';
       }).join('');
       panel.insertAdjacentHTML('beforeend', '<p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>');
     } catch (error) {
@@ -376,8 +376,9 @@
         const status = v.status === 'approved' ? 'مقبول' : v.status === 'pending' ? 'قيد المراجعة' : v.status === 'rejected' ? 'مرفوض' : 'مزال';
         const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
         const review = admin && v.status === 'pending' ? '<div class="social-actions"><button class="button button-primary" data-social-action="approve-video" data-video-id="' + v.id + '">موافقة ونشر</button><button class="button button-danger" data-social-action="reject-video" data-video-id="' + v.id + '">رفض</button></div>' : '';
+        const report = user && user.id !== v.owner_id ? '<button class="button button-secondary" data-social-action="report-video" data-video-id="' + v.id + '">إبلاغ عن الفيديو</button>' : '';
         const reason = v.status === 'rejected' && v.owner_id === user?.id && v.rejection_reason ? '<p class="field-help">سبب الرفض: ' + escapeHtml(v.rejection_reason) + '</p>' : '';
-        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + '</div></article>';
+        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + report + '</div></article>';
       }));
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CLIPS</p><h1>المقاطع</h1><p>تظهر المقاطع العامة بعد اجتياز المراجعة فقط.</p></div><button class="button button-primary" data-view="upload">رفع فيديو</button></div>' + (admin ? '<div class="notice-panel"><div><strong>وضع المراجعة</strong><p>تظهر لك الفيديوهات المعلّقة وأزرار الموافقة أو الرفض بصفتك مديراً.</p></div></div>' : '') + '<div class="clip-grid">' + (cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد مقاطع بعد</h3><p>ستظهر هنا الفيديوهات المقبولة. يمكنك رفع فيديو لإرساله للمراجعة.</p></div>') + '</div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
     } catch (error) {
@@ -502,9 +503,10 @@
       const searchTerm = document.getElementById('global-search')?.value.trim();
       if (document.getElementById('account-search-results') && searchTerm) await renderSearch(searchTerm);
       if (action === 'mark-notification-read') await renderNotifications();
-      else if (action === 'approve-video' || action === 'reject-video') await renderClips();
+      else if (action === 'approve-video' || action === 'reject-video' || action === 'report-video') await renderClips();
       else if (action === 'cancel-room') await renderRooms();
-      else if (action.startsWith('report-') || action.endsWith('-report')) await renderSettings();
+      else if (['review-report','resolve-report','dismiss-report'].includes(action)) await renderSettings();
+      else if (action === 'report-profile' && searchTerm) await renderSearch(searchTerm);
       else await renderSocialInbox();
       messageSocial(messages[action] || 'تم تحديث الإجراء.');
     } catch (error) {
@@ -517,7 +519,7 @@
     const button = event.target.closest('[data-social-action]');
     if (!button) return;
     event.preventDefault();
-    handleSocialAction(button.dataset.socialAction, button.dataset.userId || button.dataset.notificationId);
+    handleSocialAction(button.dataset.socialAction, button.dataset.userId || button.dataset.notificationId || button.dataset.videoId || button.dataset.roomId || button.dataset.reportId);
   });
 
   if (window.supabase && config) ensureClient();
