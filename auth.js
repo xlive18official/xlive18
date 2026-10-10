@@ -8,6 +8,7 @@
   let user = null;
   let subscription = null;
   let activeConversationId = null;
+  let passwordRecoveryActive = false;
 
   function feedback(message) {
     const node = document.getElementById('auth-feedback');
@@ -37,6 +38,13 @@
       return user;
     } catch (_) { return user; }
   }
+
+  function renderPasswordRecovery() {
+    passwordRecoveryActive = true;
+    document.querySelectorAll('[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === 'profile'));
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACCOUNT SECURITY</p><h1>تعيين كلمة مرور جديدة</h1><p>اختر كلمة مرور جديدة لحسابك.</p></div></div><form id="password-update-form" class="simple-panel form-stack"><div class="field"><label for="new-password">كلمة المرور الجديدة</label><input id="new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="field"><label for="confirm-password">تأكيد كلمة المرور</label><input id="confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><button id="password-update-submit" class="button button-primary" type="submit">حفظ كلمة المرور</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>';
+  }
+
   async function renderProfile() {
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
     if (user) {
@@ -59,8 +67,8 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; renderProfile(); }).catch(() => {});
-    const result = client.auth.onAuthStateChange((_event, session) => { user = session?.user || null; renderProfile(); });
+    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; if (!passwordRecoveryActive) renderProfile(); }).catch(() => {});
+    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive) renderProfile(); });
     subscription = result?.data?.subscription || null;
     return client;
   }
@@ -81,6 +89,20 @@
     }
   });
   document.addEventListener('submit', async event => {
+    if (event.target.id === 'password-update-form') {
+      event.preventDefault();
+      const supabase = ensureClient();
+      const password = document.getElementById('new-password').value;
+      const confirm = document.getElementById('confirm-password').value;
+      if (password.length < 8 || password.length > 72) { feedback('استخدم كلمة مرور من 8 إلى 72 حرفاً.'); return; }
+      if (password !== confirm) { feedback('كلمتا المرور غير متطابقتين.'); return; }
+      const button = document.getElementById('password-update-submit'); button.disabled = true; button.textContent = 'جارٍ الحفظ…';
+      const {error} = await supabase.auth.updateUser({password});
+      if (error) { feedback('تعذر تحديث كلمة المرور. افتح رابط الاستعادة الجديد وحاول مجدداً.'); button.disabled=false; button.textContent='حفظ كلمة المرور'; return; }
+      passwordRecoveryActive = false;
+      root.innerHTML = '<div class="simple-panel"><h2>تم تحديث كلمة المرور</h2><p>يمكنك الآن استخدام كلمة المرور الجديدة.</p><button class="button button-primary" data-view="profile">العودة إلى الحساب</button></div>';
+      return;
+    }
     if (event.target.id === 'room-create-form') {
       event.preventDefault();
       const supabase = ensureClient(); await syncCurrentUser(supabase);
