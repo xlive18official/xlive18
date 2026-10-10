@@ -57,6 +57,14 @@ test('private profiles are readable only by their owner', () => {
   assert.doesNotMatch(profilePrivacy, /using \(true\)/i);
 });
 
+
+test('blocking a user removes existing follows in both directions', () => {
+  const blockMigration = readFileSync('supabase/migrations/0006_remove_follows_on_block.sql', 'utf8');
+  assert.match(blockMigration, /after insert on public\.user_blocks/i);
+  assert.match(blockMigration, /delete from public\.follows[\s\S]*?follower_id = new\.blocker_id and followed_id = new\.blocked_id[\s\S]*?or \(follower_id = new\.blocked_id and followed_id = new\.blocker_id\)/i);
+  assert.match(blockMigration, /revoke all on function public\.remove_follows_on_block\(\) from public, anon, authenticated/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
