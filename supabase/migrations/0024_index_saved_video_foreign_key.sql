@@ -1,0 +1,1 @@
+create index if not exists saved_videos_video_id_idx on public.saved_videos (video_id);
