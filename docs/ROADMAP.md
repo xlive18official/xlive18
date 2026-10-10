@@ -26,6 +26,7 @@
 - `supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql` و`0010_allow_unblock_from_account_search.sql` و`0012_limit_profile_search_to_authenticated_users.sql` و`0013_tighten_profile_search_and_follow_request_transitions.sql` و`0014_optimize_rls_policy_evaluation.sql` و`0015_direct_messages_and_social_notifications.sql` و`0016_approved_video_delivery_and_review_notifications.sql` و`0017_room_cancellation_and_video_review_validation.sql` و`0018_require_longer_authenticated_profile_search.sql` و`0019_tighten_table_and_storage_grants.sql` و`0020_restrict_client_insert_columns.sql` و`0021_allow_approved_followers_to_view_private_profiles.sql` و`0022_support_removal_of_approved_videos.sql`: بحث للحسابات المسجلة فقط، بادئة من ثلاثة أحرف و20 نتيجة كحد أقصى، إغلاق انتقالات طلب المتابعة بعد القرار، وصلاحيات إدخال محدودة للمتصفح.
 - `supabase/README.md`: خطوات تشغيل الترحيلات يدوياً.
 - `docs/PROVIDER_DECISIONS.md`: مقارنة مبدئية للمزوّدين والحصص المجانية ومخاطر سياسة المحتوى.
+- `docs/ADMIN_SETUP.md`: طريقة آمنة لإسناد دور admin من بيئة موثوقة دون كشف service-role key.
 
 ### لم يُنفّذ أو يُختبر بعد
 - مشروع Supabase `xlive18` موجود ونشط؛ الجداول التسعة موجودة وRLS مفعّل عليها.
