@@ -83,6 +83,22 @@ test('private profile follow requests are participant-scoped and accepted by the
   assert.match(requests, /delete from public\.follow_requests/i);
 });
 
+
+test('account search and social controls call Supabase actions', () => {
+  assert.match(app, /window\.XLiveAuth\?\.renderSearch\(extra\)/);
+  assert.match(auth, /rpc\('search_profiles'/);
+  assert.match(auth, /from\('follow_requests'\)\.insert/);
+  assert.match(auth, /from\('follows'\)\.insert/);
+  assert.match(auth, /from\('user_blocks'\)\.insert/);
+  assert.match(auth, /data-social-action="accept"/);
+});
+test('account discovery RPC exposes only minimal profile fields', () => {
+  const discovery = readFileSync('supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql', 'utf8');
+  assert.match(discovery, /returns table \(id uuid, username text, display_name text, is_private boolean\)/i);
+  assert.match(discovery, /grant execute on function public\.search_profiles\(text\) to anon, authenticated/i);
+  assert.match(discovery, /revoke all on function public\.search_profiles\(text\) from public/i);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
