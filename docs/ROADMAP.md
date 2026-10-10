@@ -19,11 +19,11 @@
 - ملفا الترحيل `0003_restrict_internal_function_execute.sql` و`0004_index_foreign_keys.sql` يوثّقان تصحيح صلاحيات الدوال والفهارس.
 - `supabase/migrations/0001_initial_schema.sql`: مسودة جداول الحسابات والملفات الشخصية والمتابعة والحظر والفيديوهات والغرف والبلاغات والإشعارات والمشتريات، مع سياسات RLS.
 - `supabase/migrations/0002_private_video_storage.sql`: bucket خاص للفيديوهات وسياسات تحميل محدودة بمجلد المستخدم.
-- `supabase/migrations/0005_restrict_private_profile_reads.sql`: تقييد قراءة الحسابات الخاصة بصاحب الحساب فقط.
+- `supabase/migrations/0005_restrict_private_profile_reads.sql`: تقييد قراءة الحسابات الخاصة بصاحب الحساب والمتابعين المقبولين فقط.
 - `supabase/migrations/0006_remove_follows_on_block.sql`: حذف المتابعات المتبادلة تلقائياً عند الحظر.
 - `supabase/migrations/0007_restrict_follows_to_public_profiles.sql`: منع المتابعة المباشرة للحسابات الخاصة.
 - `supabase/migrations/0008_private_profile_follow_requests.sql`: جدول طلبات متابعة للحسابات الخاصة، مع قبول/رفض من صاحب الحساب وحذف الطلبات عند الحظر.
-- `supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql` و`0010_allow_unblock_from_account_search.sql` و`0012_limit_profile_search_to_authenticated_users.sql` و`0013_tighten_profile_search_and_follow_request_transitions.sql` و`0014_optimize_rls_policy_evaluation.sql` و`0015_direct_messages_and_social_notifications.sql` و`0016_approved_video_delivery_and_review_notifications.sql` و`0017_room_cancellation_and_video_review_validation.sql` و`0018_require_longer_authenticated_profile_search.sql` و`0019_tighten_table_and_storage_grants.sql` و`0020_restrict_client_insert_columns.sql`: بحث للحسابات المسجلة فقط، بادئة من ثلاثة أحرف و20 نتيجة كحد أقصى، وإغلاق انتقالات طلب المتابعة بعد القبول أو الرفض.
+- `supabase/migrations/0009_profile_discovery_and_follow_request_hardening.sql` و`0010_allow_unblock_from_account_search.sql` و`0012_limit_profile_search_to_authenticated_users.sql` و`0013_tighten_profile_search_and_follow_request_transitions.sql` و`0014_optimize_rls_policy_evaluation.sql` و`0015_direct_messages_and_social_notifications.sql` و`0016_approved_video_delivery_and_review_notifications.sql` و`0017_room_cancellation_and_video_review_validation.sql` و`0018_require_longer_authenticated_profile_search.sql` و`0019_tighten_table_and_storage_grants.sql` و`0020_restrict_client_insert_columns.sql` و`0021_allow_approved_followers_to_view_private_profiles.sql`: بحث للحسابات المسجلة فقط، بادئة من ثلاثة أحرف و20 نتيجة كحد أقصى، وإغلاق انتقالات طلب المتابعة بعد القبول أو الرفض.
 - `supabase/README.md`: خطوات تشغيل الترحيلات يدوياً.
 - `docs/PROVIDER_DECISIONS.md`: مقارنة مبدئية للمزوّدين والحصص المجانية ومخاطر سياسة المحتوى.
 
