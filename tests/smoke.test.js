@@ -113,6 +113,27 @@ test('RLS policies use initplan-friendly auth checks and avoid overlapping admin
   assert.match(rls, /create policy "rooms_admin_delete"/i);
 });
 
+
+test('direct messages enforce participant access, follow connection, and read-only receipt updates', () => {
+  const messaging = readFileSync('supabase/migrations/0015_direct_messages_and_social_notifications.sql', 'utf8');
+  assert.match(messaging, /alter table public\.messages enable row level security/i);
+  assert.match(messaging, /sender_id = \(select auth\.uid\(\)\)/i);
+  assert.match(messaging, /not private\.is_blocked_pair\(sender_id, recipient_id\)/i);
+  assert.match(messaging, /exists \([\s\S]*?from public\.follows f/i);
+  assert.match(messaging, /grant update \(read_at\) on public\.messages to authenticated/i);
+  assert.match(messaging, /after insert on public\.messages/i);
+  assert.match(messaging, /after insert or update of status on public\.follow_requests/i);
+});
+test('messages and notifications are connected to real application views', () => {
+  assert.match(app, /window\.XLiveAuth\?\.renderMessages\(\)/);
+  assert.match(app, /window\.XLiveAuth\?\.renderNotifications\(\)/);
+  assert.match(auth, /from\('messages'\)\.insert/);
+  assert.match(auth, /from\('notifications'\)\.select/);
+  assert.match(auth, /mark-notification-read/);
+  assert.match(css, /\.messages-layout/);
+  assert.match(css, /\.notification-item/);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
