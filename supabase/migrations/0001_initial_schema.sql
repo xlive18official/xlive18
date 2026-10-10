@@ -214,6 +214,23 @@ drop policy if exists "blocks_delete_self" on public.user_blocks;
 create policy "blocks_delete_self" on public.user_blocks
 for delete to authenticated using (blocker_id = (select auth.uid()));
 
+-- SECURITY DEFINER lets the follow check see blocks from either side without exposing block lists.
+create or replace function public.is_blocked_pair(user_a uuid, user_b uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select exists (
+    select 1 from public.user_blocks b
+    where (b.blocker_id = user_a and b.blocked_id = user_b)
+       or (b.blocker_id = user_b and b.blocked_id = user_a)
+  );
+$;
+revoke all on function public.is_blocked_pair(uuid, uuid) from public, anon;
+grant execute on function public.is_blocked_pair(uuid, uuid) to authenticated;
+
 -- Follow graph: users can create/remove only their own follows; self-follows are forbidden.
 drop policy if exists "follows_select_public" on public.follows;
 create policy "follows_select_public" on public.follows
@@ -223,11 +240,8 @@ create policy "follows_insert_self" on public.follows
 for insert to authenticated
 with check (
   follower_id = (select auth.uid())
-  and not exists (
-    select 1 from public.user_blocks b
-    where (b.blocker_id = follower_id and b.blocked_id = followed_id)
-       or (b.blocker_id = followed_id and b.blocked_id = follower_id)
-  )
+  and follower_id <> followed_id
+  and not public.is_blocked_pair(follower_id, followed_id)
 );
 drop policy if exists "follows_delete_self" on public.follows;
 create policy "follows_delete_self" on public.follows
@@ -339,7 +353,8 @@ grant select, insert, update on public.videos to authenticated;
 grant select, insert, update on public.rooms to authenticated;
 grant select on public.room_members to authenticated;
 grant select, insert, update on public.reports to authenticated;
-grant select, update on public.notifications to authenticated;
+grant select on public.notifications to authenticated;
+grant update (read_at) on public.notifications to authenticated;
 grant select on public.purchases to authenticated;
 
 commit;
