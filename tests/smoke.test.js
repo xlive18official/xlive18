@@ -153,6 +153,23 @@ test('messages, follow requests, and notifications have RLS enabled in their mig
   assert.match(messaging, /grant select on public\.notifications to authenticated/i.test(schema) ? /notifications/ : /alter table public\.notifications/i);
 });
 
+
+test('room requests can be cancelled by hosts without enabling client-side live transitions', () => {
+  const rooms = readFileSync('supabase/migrations/0017_room_cancellation_and_video_review_validation.sql', 'utf8');
+  assert.match(auth, /from\('rooms'\)\.insert\(room\)/);
+  assert.match(auth, /status:'pending',provider_room_ref:null/);
+  assert.match(rooms, /status in \('pending','cancelled'\)/i);
+  assert.match(rooms, /Video review must include reviewer and timestamp/i);
+  assert.match(auth, /data-social-action="cancel-room"/);
+});
+test('report submission and admin review are wired to RLS-protected reports', () => {
+  assert.match(auth, /from\('reports'\)\.insert/);
+  assert.match(auth, /from\('reports'\)\.update/);
+  assert.match(auth, /data-social-action="resolve-report"/);
+  assert.match(auth, /data-social-action="report-video"/);
+  assert.match(auth, /data-social-action="report-profile"/);
+});
+
 test('video storage bucket is private and scoped to the authenticated owner', () => {
   assert.match(storage, /'video-originals',[\s\S]*?false,[\s\S]*?52428800/);
   assert.match(storage, /storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/);
