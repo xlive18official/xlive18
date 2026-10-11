@@ -235,3 +235,12 @@ button,a,input,textarea,select{max-width:100%;overflow-wrap:anywhere}
  .home-page-number,.home-page-arrow{min-width:29px;height:30px;padding-inline:6px}
 }
 @media(max-width:360px){.home-feed-grid{gap:3px}.home-clip-card strong{font-size:8px}.home-page-number,.home-page-arrow{min-width:26px;height:28px}}
+
+
+/* Keep the site name and a restrained search field visible in the desktop top bar */
+@media(min-width:761px){
+ .topbar>.mobile-brand{display:flex;font-size:16px;gap:7px;flex:0 0 auto}
+ .topbar>.mobile-brand .brand-mark{width:32px;height:32px;border-radius:10px;font-size:21px}
+ .topbar>.search-form{flex:0 1 340px;max-width:340px;margin-inline-start:12px}
+ .topbar>.top-actions{margin-inline-start:auto}
+}
