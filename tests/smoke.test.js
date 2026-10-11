@@ -325,3 +325,14 @@ test('profile view renders a stable shell before async auth profile data', () =>
   assert.match(app, /if \(view === 'profile'\) \{[\s\S]*?جارٍ تحميل بيانات الحساب[\s\S]*?XLiveAuth\?\.render\(\);\s*return;/);
   assert.match(auth, /async function renderProfile\(\)/);
 });
+
+
+test('profile editing is explicit and sign out lives in the sidebar', () => {
+  const auth = readFileSync('auth.js', 'utf8');
+  assert.match(auth, /id="profile-save" type="button">تعديل/);
+  assert.match(auth, /profile-display-name[\s\S]*?disabled/);
+  assert.match(auth, /target\.textContent = 'حفظ التغييرات'/);
+  assert.doesNotMatch(auth, /<button class="button button-secondary" id="auth-signout"/);
+  assert.match(html, /id="auth-signout"[^>]*hidden/);
+  assert.match(html, /sidebar-signout/);
+});
