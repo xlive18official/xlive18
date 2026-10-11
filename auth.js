@@ -67,8 +67,8 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; if (!passwordRecoveryActive) renderProfile(); }).catch(() => {});
-    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive) renderProfile(); });
+    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; if (passwordRecoveryActive) return; if (user) window.XLiveApp?.render('home'); else renderProfile(); }).catch(() => {});
+    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive && event === 'SIGNED_IN' && user) window.XLiveApp?.render('home'); else if (!passwordRecoveryActive) renderProfile(); });
     subscription = result?.data?.subscription || null;
     return client;
   }
@@ -180,11 +180,12 @@
         const displayName = document.getElementById('auth-name').value.trim();
         const {data,error} = await supabase.auth.signUp({email,password,options:{emailRedirectTo:'https://xlive18.xlive18-official.workers.dev',data:{display_name:displayName,age_confirmed:true}}});
         if (error) throw error;
-        feedback(data.session ? 'تم إنشاء الحساب وتسجيل الدخول.' : 'تم إرسال طلب التسجيل. افحص بريدك لتأكيد الحساب.');
+        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.render('home'); } else { feedback('تم إنشاء الحساب. افحص بريدك لتأكيده، وبعدها سجّل الدخول للانتقال إلى الصفحة الرئيسية.'); }
       } else {
         const {error} = await supabase.auth.signInWithPassword({email,password});
         if (error) throw error;
         feedback('تم تسجيل الدخول.');
+        window.XLiveApp?.render('home');
       }
     } catch (error) {
       const message = String(error?.message || '');
