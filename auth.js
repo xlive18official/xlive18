@@ -84,6 +84,7 @@
     const target = event.target.closest('[data-auth-mode],#auth-signout,#auth-reset,#profile-save');
     if (!target) return;
     if (target.id === 'profile-save') {
+      event.preventDefault();
       const form = document.getElementById('profile-form');
       if (!form) return;
       const fields = ['profile-display-name','profile-bio','profile-private'].map(id => document.getElementById(id)).filter(Boolean);
@@ -235,21 +236,24 @@
       bio: document.getElementById('profile-bio').value.trim(),
       is_private: document.getElementById('profile-private').checked
     };
+    let saveSucceeded = false;
     try {
       const { error } = await supabase.from('profiles').update(values).eq('id', user.id);
       if (error) throw error;
+      saveSucceeded = true;
       feedback('تم حفظ الملف الشخصي.');
     } catch (error) {
       feedback('تعذر حفظ الملف. تأكد من اتصال قاعدة البيانات وحاول مجدداً.');
       console.error('XLive profile update error', error);
     } finally {
       button.disabled = false;
-      if (!document.getElementById('auth-feedback')?.textContent.startsWith('تعذر حفظ')) {
+      if (saveSucceeded) {
         ['profile-display-name','profile-bio','profile-private'].forEach(id => { const field = document.getElementById(id); if (field) field.disabled = true; });
         button.dataset.editing = 'false';
         button.type = 'button';
         button.textContent = 'تعديل';
       } else {
+        button.type = 'button';
         button.textContent = 'حفظ التغييرات';
       }
     }
