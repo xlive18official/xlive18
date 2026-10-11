@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#0b0b0d">
   <meta name="description" content="XLive 18 — منصة اجتماعية وترفيهية للبالغين.">
   <title>XLive 18 — منصتك الاجتماعية</title>
-  <link rel="stylesheet" href="./styles.css?v=20261012-23">
+  <link rel="stylesheet" href="./styles.css?v=20261012-24">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20261012-23"></script>
-  <script src="./app.js?v=20261012-23" defer></script>
-  <script src="./auth.js?v=20261012-23" defer></script>
-  <script src="./admin.js?v=20261012-23" defer></script>
-  <script src="./account-controls.js?v=20261012-23" defer></script>
-  <script src="./site-editor.js?v=20261012-23" defer></script>
+  <script src="./supabase-config.js?v=20261012-24"></script>
+  <script src="./app.js?v=20261012-24" defer></script>
+  <script src="./auth.js?v=20261012-24" defer></script>
+  <script src="./admin.js?v=20261012-24" defer></script>
+  <script src="./account-controls.js?v=20261012-24" defer></script>
+  <script src="./site-editor.js?v=20261012-24" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -66,5 +66,32 @@
     <button class="active" data-view="home"><span>⌂</span>الرئيسية</button><button data-view="clips"><span>▷</span>المقاطع</button><button data-view="rooms"><span>◉</span>الغرف</button><button data-view="messages"><span>✉</span>الرسائل</button><button data-view="saved"><span>♡</span>المحفوظات</button><button data-view="creator"><span>▣</span>الصفحة الشخصية</button><button data-view="profile"><span>◎</span>حسابي</button><button data-view="editor" hidden><span>✎</span>تعديل الموقع</button><button data-view="admin" id="admin-mobile-nav" hidden><span>⚙</span>الإدارة</button><button id="mobile-signout" hidden><span>↪</span>تسجيل الخروج</button>
   </nav>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+  (() => {
+    const button = document.getElementById('mobile-menu-toggle');
+    if (!button) return;
+    const close = () => {
+      document.body.classList.remove('mobile-menu-open');
+      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute('aria-label', 'فتح القائمة الجانبية');
+      button.textContent = '☰';
+    };
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const opening = !document.body.classList.contains('mobile-menu-open');
+      document.body.classList.toggle('mobile-menu-open', opening);
+      button.setAttribute('aria-expanded', String(opening));
+      button.setAttribute('aria-label', opening ? 'إغلاق القائمة الجانبية' : 'فتح القائمة الجانبية');
+      button.textContent = opening ? '×' : '☰';
+    });
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('.sidebar [data-view]')) close();
+      if (document.body.classList.contains('mobile-menu-open') &&
+          event.target.matches('body.mobile-menu-open::before')) close();
+    });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+  })();
+  </script>
 </body>
 </html>
