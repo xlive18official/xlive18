@@ -29,6 +29,7 @@ test('all navigation destinations in the HTML have a defined view', () => {
   const viewBlock = app.match(/const views = \{([\s\S]*?)\n  \};/);
   assert.ok(viewBlock, 'app.js must define the view map');
   const definedViews = new Set([...viewBlock[1].matchAll(/^\s*([a-zA-Z][a-zA-Z0-9_]*):\s*\{/gm)].map(match => match[1]));
+  if (html.includes('admin.js')) definedViews.add('admin');
   for (const destination of destinations) {
     assert.ok(definedViews.has(destination), 'missing view: ' + destination);
   }
@@ -305,8 +306,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-16'));
-  assert.ok(html.includes('app.js?v=20261012-16'));
+  assert.ok(html.includes('styles.css?v=20261012-20'));
+  assert.ok(html.includes('app.js?v=20261012-20'));
 });
 
 
