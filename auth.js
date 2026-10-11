@@ -470,33 +470,36 @@
 
   async function renderClips() {
     const supabase = ensureClient();
-    if (!supabase) { root.innerHTML = '<div class="view-header"><h1>المقاطع</h1></div><p class="field-help">خدمة الحسابات غير مهيأة.</p>'; return; }
-    await syncCurrentUser(supabase);
-    const admin = user?.app_metadata?.role === 'admin';
+    const panel = document.getElementById('clips-feed');
+    if (!panel) return;
+    if (!supabase) {
+      panel.innerHTML = '<div class="empty-panel"><h3>المقاطع غير متاحة حالياً</h3><p>تعذر الاتصال بخدمة المقاطع. حاول مجدداً لاحقاً.</p></div>';
+      return;
+    }
     try {
-      const {data, error} = await supabase.from('videos').select('id,owner_id,title,description,storage_path,status,visibility,is_paid,created_at,rejection_reason').order('created_at',{ascending:false}).limit(40);
+      const {data, error} = await supabase.from('videos')
+        .select('id,title,description,storage_path,created_at')
+        .eq('status','approved')
+        .eq('visibility','public')
+        .eq('is_paid',false)
+        .order('created_at',{ascending:false})
+        .limit(40);
       if (error) throw error;
       const videos = data || [];
-      const {data: savedRows} = user ? await supabase.from('saved_videos').select('video_id').eq('user_id',user.id) : {data:[]};
-      const savedIds = new Set((savedRows || []).map(row => row.video_id));
       const cards = await Promise.all(videos.map(async v => {
-        let src = '';
-        if ((user && (user.id === v.owner_id || admin)) || (v.status === 'approved' && !v.is_paid && v.visibility === 'public')) {
-          const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
-          src = signed?.signedUrl || '';
-        }
-        const status = v.status === 'approved' ? 'مقبول' : v.status === 'pending' ? 'قيد المراجعة' : v.status === 'rejected' ? 'مرفوض' : 'مزال';
-        const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
-        const review = admin && v.status === 'pending' ? '<div class="social-actions"><button class="button button-primary" data-social-action="approve-video" data-video-id="' + v.id + '">موافقة ونشر</button><button class="button button-danger" data-social-action="reject-video" data-video-id="' + v.id + '">رفض</button></div>' : admin && v.status === 'approved' ? '<button class="button button-danger" data-social-action="remove-video" data-video-id="' + v.id + '">إزالة الفيديو</button>' : '';
-        const report = user && user.id !== v.owner_id ? '<button class="button button-secondary" data-social-action="report-video" data-video-id="' + v.id + '">إبلاغ عن الفيديو</button>' : '';
-        const savedAction = user && v.status === 'approved' && !v.is_paid && v.visibility === 'public' ? '<button class="button button-secondary" data-social-action="' + (savedIds.has(v.id) ? 'remove-saved-video' : 'save-video') + '" data-video-id="' + v.id + '">' + (savedIds.has(v.id) ? 'إزالة من المحفوظات' : 'حفظ الفيديو') + '</button>' : '';
-        const reason = v.status === 'rejected' && v.owner_id === user?.id && v.rejection_reason ? '<p class="field-help">سبب الرفض: ' + escapeHtml(v.rejection_reason) + '</p>' : '';
-        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small>' + reason + review + report + savedAction + '</div></article>';
+        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
+        const src = signed?.signedUrl || '';
+        const media = src
+          ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>'
+          : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
+        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
-      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CLIPS</p><h1>المقاطع</h1><p>تظهر المقاطع العامة بعد اجتياز المراجعة فقط.</p></div><button class="button button-primary" data-view="upload">رفع فيديو</button></div>' + (admin ? '<div class="notice-panel"><div><strong>وضع المراجعة</strong><p>تظهر لك الفيديوهات المعلّقة وأزرار الموافقة أو الرفض بصفتك مديراً.</p></div></div>' : '') + '<div class="clip-grid">' + (cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد مقاطع بعد</h3><p>ستظهر هنا الفيديوهات المقبولة. يمكنك رفع فيديو لإرساله للمراجعة.</p></div>') + '</div><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>';
+      panel.innerHTML = cards.length
+        ? cards.join('')
+        : '<div class="empty-panel"><h3>لا توجد مقاطع مميزة بعد</h3><p>ستظهر هنا المقاطع العامة التي اجتازت المراجعة وأصبحت متاحة للمشاهدة.</p><span class="status-pill">بانتظار نشر أول فيديو مقبول</span></div>';
     } catch (error) {
-      root.innerHTML = '<div class="view-header"><h1>المقاطع</h1></div><div class="simple-panel"><p>تعذر تحميل المقاطع. تحقق من إعدادات قاعدة البيانات والتخزين.</p><button class="button button-primary" data-view="upload">رفع فيديو</button></div>';
-      console.error('XLive clips error',error);
+      panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من الاتصال ثم حاول مجدداً.</p></div>';
+      console.error('XLive clips error', error);
     }
   }
 
