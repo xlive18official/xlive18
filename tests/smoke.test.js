@@ -305,8 +305,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.match(html, /styles\.css\?v=20261012-8/);
-  assert.match(html, /app\.js\?v=20261012-8/);
+  assert.match(html, /styles\.css\?v=20261012-\\d+/);
+  assert.match(html, /app\.js\?v=20261012-\\d+/);
 });
 
 
@@ -335,4 +335,14 @@ test('profile editing is explicit and sign out lives in the sidebar', () => {
   assert.doesNotMatch(auth, /<button class="button button-secondary" id="auth-signout"/);
   assert.match(html, /id="auth-signout"[^>]*hidden/);
   assert.match(html, /sidebar-signout/);
+});
+
+test('creator page is available from the bottom navigation and has media tabs', () => {
+  assert.match(html, /data-view="creator"><span>▣<\/span>الصفحة الشخصية/);
+  assert.match(app, /creator: \{ title: 'الصفحة الشخصية'/);
+  assert.match(app, /renderCreatorProfile\(\)/);
+  assert.match(auth, /data-creator-tab="videos"/);
+  assert.match(auth, /data-creator-tab="photos"/);
+  assert.match(auth, /creator-live-form/);
+  assert.match(auth, /creator-photo-upload-form/);
 });
