@@ -76,3 +76,17 @@
 .home-clip-card>div:last-child{padding:12px}
 .home-clip-card strong{font-size:13px}
 .home-clip-card p{font-size:11px;color:var(--muted);margin:6px 0 0;overflow-wrap:anywhere}
+
+
+/* Homepage feed clarity and service status */
+.home-status-strip{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0 2px}
+.home-status-strip>span{display:flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:#121215;color:#c5c5ce;font-size:11px}
+.status-dot-muted{background:#777781;box-shadow:none}
+.section-subtitle{margin:5px 0 0;color:var(--muted);font-size:12px}
+.home-feed-wrap{padding:14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#141417,#0f0f12)}
+.feed-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.feed-toolbar-title{font-size:12px;font-weight:600}
+.feed-toolbar-note{font-size:10px;color:var(--muted)}
+.home-feed-wrap .empty-panel{border-color:#34343b;background:#101013}
+.home-feed-wrap .home-feed-grid{margin-top:0}
+@media(max-width:560px){.home-status-strip{gap:7px}.home-status-strip>span{font-size:10px;padding:6px 9px}.home-feed-wrap{padding:9px}.feed-toolbar{align-items:flex-start;flex-direction:column;gap:3px}}
