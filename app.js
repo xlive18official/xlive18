@@ -107,8 +107,6 @@
     if (view === 'live') window.XLiveAuth?.renderLive();
     if (view === 'settings') window.XLiveAuth?.renderSettings();
     if (view === 'saved') window.XLiveAuth?.renderSaved();
-    if (view === 'messages') window.XLiveAuth?.renderMessages();
-    if (view === 'notifications') window.XLiveAuth?.renderNotifications();
   }
 
   function homeMarkup() {
