@@ -84,7 +84,7 @@
     } else if (target.id === 'auth-reset') {
       const email = document.getElementById('auth-email')?.value.trim();
       if (!email) { feedback('أدخل بريدك الإلكتروني أولاً.'); return; }
-      const {error} = await supabase.auth.resetPasswordForEmail(email, {redirectTo: window.location.origin});
+      const {error} = await supabase.auth.resetPasswordForEmail(email, {redirectTo: 'https://xlive18.xlive18-official.workers.dev'});
       feedback(error ? 'تعذر إرسال تعليمات الاستعادة. تحقق من إعدادات البريد.' : 'إذا كان البريد مسجلاً، فستصلك تعليمات الاستعادة.');
     }
   });
@@ -178,7 +178,7 @@
     try {
       if (mode === 'signup') {
         const displayName = document.getElementById('auth-name').value.trim();
-        const {data,error} = await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin,data:{display_name:displayName,age_confirmed:true}}});
+        const {data,error} = await supabase.auth.signUp({email,password,options:{emailRedirectTo:'https://xlive18.xlive18-official.workers.dev',data:{display_name:displayName,age_confirmed:true}}});
         if (error) throw error;
         feedback(data.session ? 'تم إنشاء الحساب وتسجيل الدخول.' : 'تم إرسال طلب التسجيل. افحص بريدك لتأكيد الحساب.');
       } else {
