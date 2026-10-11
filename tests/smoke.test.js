@@ -287,11 +287,18 @@ test('authenticated profile editing is scoped to the current user', () => {
 });
 
 
+test('rooms view renders a single loading state before async room data replaces it', () => {
+  assert.match(app, /if \(view === 'rooms'\) \{[\s\S]*?جارٍ تحميل الغرف[\s\S]*?renderRooms\(\);[\s\S]*?return;/);
+  assert.doesNotMatch(app, /if \(view === 'rooms'\) window\.XLiveAuth\?\.renderRooms\(\);/);
+  assert.match(auth, /async function renderRooms\(\)/);
+  assert.match(auth, /root\.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 \/ ROOMS/);
+});
+
 test('homepage has no stale content before app initialization and cache-busts assets', () => {
   assert.doesNotMatch(html, /استكشف المقاطع/);
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.match(html, /styles\\.css\\?v=20261012-2/);
-  assert.match(html, /app\\.js\\?v=20261012-2/);
+  assert.match(html, /styles\\.css\\?v=20261012-3/);
+  assert.match(html, /app\\.js\\?v=20261012-3/);
 });
