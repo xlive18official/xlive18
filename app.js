@@ -85,6 +85,12 @@
       return;
     }
 
+    if (view === 'saved') {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / SAVED</p><h1>المحفوظات</h1><p>جارٍ تحميل المحفوظات…</p></div></div><div class="clip-grid" aria-live="polite"><div class="empty-panel"><h3>جارٍ تحميل المحفوظات…</h3></div></div>';
+      window.XLiveAuth?.renderSaved();
+      return;
+    }
+
     const meta = views[view];
     let body = '';
     if (view === 'upload') {
@@ -118,7 +124,6 @@
     if (view === 'upload') window.XLiveAuth?.renderUpload();
     if (view === 'live') window.XLiveAuth?.renderLive();
     if (view === 'settings') window.XLiveAuth?.renderSettings();
-    if (view === 'saved') window.XLiveAuth?.renderSaved();
   }
 
   function homeMarkup() {
