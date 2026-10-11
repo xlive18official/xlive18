@@ -13,15 +13,15 @@ const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_p
 test('Cloudflare build includes every browser script referenced by index.html', () => {
   const build = readFileSync('scripts/prepare-cloudflare.mjs', 'utf8');
   for (const script of ['app.js', 'auth.js', 'site-editor.js', 'supabase-config.js']) {
-    assert.ok(html.includes('src="./' + script + '"'), 'index.html must load ' + script);
+    assert.ok(new RegExp('src="./' + script.replace('.', '\\.') + '(?:\\?[^"]*)?"').test(html), 'index.html must load ' + script);
     assert.ok(build.includes('"' + script + '"'), 'Cloudflare build must copy ' + script);
   }
 });
 
 test('document is Arabic RTL and links the local app assets', () => {
   assert.match(html, /<html lang="ar" dir="rtl">/);
-  assert.match(html, /href="\.\/styles\.css"/);
-  assert.match(html, /src="\.\/app\.js" defer/);
+  assert.match(html, /href="\.\/styles\.css(?:\?[^"]*)?"/);
+  assert.match(html, /src="\.\/app\.js(?:\?[^"]*)?" defer/);
 });
 
 test('all navigation destinations in the HTML have a defined view', () => {
@@ -191,7 +191,7 @@ test('report submission and admin review are wired to RLS-protected reports', ()
   assert.match(auth, /from\('reports'\)\.insert/);
   assert.match(auth, /from\('reports'\)\.update/);
   assert.match(auth, /data-social-action="resolve-report"/);
-  assert.match(auth, /data-social-action="report-video"/);
+  assert.match(auth, /action === 'report-video'[\s\S]*?supabase\.from\('reports'\)\.insert/);
   assert.match(auth, /data-social-action="report-profile"/);
   assert.match(auth, /data-social-action="report-message"/);
 });
@@ -211,7 +211,7 @@ test('client table grants are least-privilege and do not expose server-only colu
 
 test('admins can remove previously approved videos and owners are notified', () => {
   const removal = readFileSync('supabase/migrations/0022_support_removal_of_approved_videos.sql', 'utf8');
-  assert.match(auth, /data-social-action="remove-video"/);
+  assert.match(auth, /action === 'remove-video'[\s\S]*?status = action === 'approve-video' \? 'approved' : action === 'remove-video' \? 'removed'/);
   assert.match(auth, /action === 'remove-video' \? 'removed'/);
   assert.match(removal, /new\.status in \('approved','rejected','removed'\)/i);
   assert.match(removal, /when new\.status = 'removed' then 'تمت إزالة الفيديو'/i);
@@ -254,7 +254,7 @@ const config = readFileSync('supabase-config.js', 'utf8');
 
 test('Supabase client and auth module load before account interaction', () => {
   assert.match(html, /cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/);
-  assert.match(html, /src="\.\/supabase-config\.js"/);
+  assert.match(html, /src="\.\/supabase-config\.js(?:\?[^"]*)?"/);
   assert.match(html, /src="\.\/auth\.js" defer/);
   assert.match(config, /https:\/\/eesyjavwmuopobmgcucb\.supabase\.co/);
   assert.match(config, /sb_publishable_/);
@@ -305,8 +305,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.match(html, /styles\\.css\\?v=20261012-4/);
-  assert.match(html, /app\\.js\\?v=20261012-4/);
+  assert.match(html, /styles\\.css\\?v=20261012-8/);
+  assert.match(html, /app\\.js\\?v=20261012-8/);
 });
 
 
