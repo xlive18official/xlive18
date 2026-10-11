@@ -5,8 +5,8 @@
   let design = {};
   const $ = id => document.getElementById(id);
   async function init() {
-    if (!window.supabase || !cfg?.url || !cfg?.publishableKey) return;
-    client = window.supabase.createClient(cfg.url, cfg.publishableKey);
+    if (!window.supabase || !cfg?.url || !cfg?.key) return;
+    client = window.supabase.createClient(cfg.url, cfg.key);
     const {data:{session}} = await client.auth.getSession();
     const admin = session?.user?.app_metadata?.role === 'admin';
     document.querySelectorAll('[data-view="editor"]').forEach(el => el.hidden = !admin);
