@@ -284,3 +284,69 @@ body.auth-only .page-footer { display: none; }
 
 /* Ensure the HTML hidden attribute wins over component display rules. */
 [hidden] { display: none !important; }
+
+/* Responsive desktop-mode hardening: keep every layout inside the viewport. */
+html, body, .app-shell, .main-content, .content-wrap, #app-view, .home-page {
+  min-width: 0;
+  max-width: 100%;
+}
+.main-content {
+  width: calc(100% - 248px);
+}
+.content-wrap {
+  width: 100%;
+}
+img, video, iframe, canvas, svg {
+  max-width: 100%;
+}
+.hero, .feature-grid, .section-grid, .messages-layout, .home-feed-grid, .clip-grid, .room-grid {
+  min-width: 0;
+}
+@media (min-width: 761px) and (max-width: 1200px) {
+  .sidebar {
+    width: 180px;
+    padding-inline: 10px;
+  }
+  .main-content {
+    width: calc(100% - 180px);
+    margin-inline-start: 180px;
+  }
+  .content-wrap {
+    width: 100%;
+    padding-inline: clamp(12px, 2vw, 24px);
+  }
+  .topbar {
+    min-width: 0;
+    padding-inline: clamp(12px, 2vw, 24px);
+    gap: 10px;
+  }
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: clamp(18px, 3vw, 32px);
+  }
+  .hero-art {
+    display: none;
+  }
+  .hero h1 {
+    font-size: clamp(23px, 3vw, 36px);
+    overflow-wrap: anywhere;
+  }
+  .hero-copy, .hero-copy > p, .top-actions, .search-form {
+    min-width: 0;
+  }
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-feed-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .main-content {
+    width: 100%;
+    margin: 0;
+  }
+  .content-wrap {
+    width: 100%;
+  }
+}
