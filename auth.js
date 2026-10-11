@@ -58,12 +58,16 @@
         if (data) profile = data;
       }
       if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]') || !user) return;
-      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>خلّي حسابك يعكس شخصيتك.</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><p class="profile-email">' + escapeHtml(user.email) + '</p><form id="profile-form" class="form-stack"><div class="field"><label for="profile-username">اسم المستخدم</label><input id="profile-username" value="' + escapeHtml(profile.username) + '" disabled><p class="field-help">اسم المستخدم الحالي.</p></div><div class="field"><label for="profile-display-name">الاسم الظاهر</label><input id="profile-display-name" maxlength="60" value="' + escapeHtml(profile.display_name) + '" placeholder="الاسم الذي يراه الآخرون"></div><div class="field"><label for="profile-bio">نبذة عنك</label><textarea id="profile-bio" maxlength="500" rows="4" placeholder="احكي باختصار عنك…">' + escapeHtml(profile.bio) + '</textarea></div><label class="auth-age"><input id="profile-private" type="checkbox" ' + (profile.is_private ? 'checked' : '') + '> جعل حسابي خاصاً</label><button class="button button-primary" id="profile-save" type="submit">حفظ التغييرات</button></form><button class="button button-secondary" id="auth-signout" type="button">تسجيل الخروج</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
+      const signoutButton = document.getElementById('auth-signout');
+      if (signoutButton) signoutButton.hidden = false;
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>خلّي حسابك يعكس شخصيتك.</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><p class="profile-email">' + escapeHtml(user.email) + '</p><form id="profile-form" class="form-stack"><div class="field"><label for="profile-username">اسم المستخدم</label><input id="profile-username" value="' + escapeHtml(profile.username) + '" disabled><p class="field-help">اسم المستخدم الحالي.</p></div><div class="field"><label for="profile-display-name">الاسم الظاهر</label><input id="profile-display-name" maxlength="60" value="' + escapeHtml(profile.display_name) + '" placeholder="الاسم الذي يراه الآخرون" disabled></div><div class="field"><label for="profile-bio">نبذة عنك</label><textarea id="profile-bio" maxlength="500" rows="4" placeholder="احكي باختصار عنك…" disabled>' + escapeHtml(profile.bio) + '</textarea></div><label class="auth-age"><input id="profile-private" type="checkbox" ' + (profile.is_private ? 'checked' : '') + ' disabled> جعل حسابي خاصاً</label><button class="button button-primary" id="profile-save" type="button">تعديل</button></form><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
       root.insertAdjacentHTML('beforeend', '<section class="simple-panel social-inbox"><h2>طلبات المتابعة</h2><div id="follow-requests-panel"><p class="field-help">جارٍ تحميل الطلبات…</p></div><h2>الحسابات المحظورة</h2><div id="blocked-accounts-panel"><p class="field-help">جارٍ تحميل قائمة الحظر…</p></div></section>');
       renderSocialInbox();
       return;
     }
     document.body.classList.add('auth-only');
+    const signoutButton = document.getElementById('auth-signout');
+    if (signoutButton) signoutButton.hidden = true;
     root.innerHTML = '<section class="auth-screen"><a class="auth-brand" href="#" aria-label="XLIVE 18"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a><div class="auth-intro"><h1>أهلاً بك في XLIVE 18</h1><p>سجّل الدخول أو أنشئ حسابك للمتابعة.</p></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div></section>';
     setMode(mode);
   }
@@ -77,8 +81,23 @@
     return client;
   }
   document.addEventListener('click', async event => {
-    const target = event.target.closest('[data-auth-mode],#auth-signout,#auth-reset');
+    const target = event.target.closest('[data-auth-mode],#auth-signout,#auth-reset,#profile-save');
     if (!target) return;
+    if (target.id === 'profile-save') {
+      const form = document.getElementById('profile-form');
+      if (!form) return;
+      const fields = ['profile-display-name','profile-bio','profile-private'].map(id => document.getElementById(id)).filter(Boolean);
+      if (target.dataset.editing !== 'true') {
+        fields.forEach(field => { field.disabled = false; });
+        target.dataset.editing = 'true';
+        target.type = 'submit';
+        target.textContent = 'حفظ التغييرات';
+        document.getElementById('profile-display-name')?.focus();
+      } else {
+        form.requestSubmit();
+      }
+      return;
+    }
     if (target.matches('[data-auth-mode]')) { setMode(target.dataset.authMode); return; }
     const supabase = ensureClient();
     if (!supabase) { feedback('خدمة الحسابات غير مهيأة بعد.'); return; }
@@ -208,6 +227,7 @@
     const supabase = ensureClient();
     if (!supabase || !user) { feedback('سجّل الدخول أولاً.'); return; }
     const button = document.getElementById('profile-save');
+    if (button?.dataset.editing !== 'true') return;
     button.disabled = true;
     button.textContent = 'جارٍ الحفظ…';
     const values = {
@@ -224,7 +244,14 @@
       console.error('XLive profile update error', error);
     } finally {
       button.disabled = false;
-      button.textContent = 'حفظ التغييرات';
+      if (!document.getElementById('auth-feedback')?.textContent.startsWith('تعذر حفظ')) {
+        ['profile-display-name','profile-bio','profile-private'].forEach(id => { const field = document.getElementById(id); if (field) field.disabled = true; });
+        button.dataset.editing = 'false';
+        button.type = 'button';
+        button.textContent = 'تعديل';
+      } else {
+        button.textContent = 'حفظ التغييرات';
+      }
     }
   });
 
