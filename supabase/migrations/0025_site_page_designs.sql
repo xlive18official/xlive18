@@ -9,6 +9,11 @@ create table if not exists public.site_page_designs (
 );
 
 alter table public.site_page_designs enable row level security;
+alter table public.site_page_designs alter column updated_by set not null;
+
+drop policy if exists "Public can read published page designs" on public.site_page_designs;
+drop policy if exists "Admins can insert page designs" on public.site_page_designs;
+drop policy if exists "Admins can update page designs" on public.site_page_designs;
 
 drop policy if exists "site_page_designs_public_read" on public.site_page_designs;
 create policy "site_page_designs_public_read"
@@ -48,6 +53,8 @@ begin
 end;
 $$;
 
+revoke all on function public.set_site_page_design_updated_at() from public, anon, authenticated;
+
 drop trigger if exists site_page_designs_updated_at on public.site_page_designs;
 create trigger site_page_designs_updated_at
 before update on public.site_page_designs
@@ -65,6 +72,16 @@ on conflict (id) do update
 set public = excluded.public,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Public can view site design assets" on storage.objects;
+drop policy if exists "Admins can upload site design assets" on storage.objects;
+drop policy if exists "Admins can update site design assets" on storage.objects;
+drop policy if exists "Admins can delete site design assets" on storage.objects;
+
+drop policy if exists "site_design_assets_public_select" on storage.objects;
+create policy "site_design_assets_public_select"
+on storage.objects for select to public
+using (bucket_id = 'site-design-assets');
 
 drop policy if exists "site_design_assets_admin_insert" on storage.objects;
 create policy "site_design_assets_admin_insert"
