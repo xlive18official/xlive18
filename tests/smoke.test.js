@@ -294,11 +294,17 @@ test('rooms view renders a single loading state before async room data replaces 
   assert.match(auth, /root\.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 \/ ROOMS/);
 });
 
+test('saved view has a stable loading state before async saved videos render', () => {
+  assert.match(app, /if \(view === 'saved'\) \{[\s\S]*?جارٍ تحميل المحفوظات[\s\S]*?renderSaved\(\);[\s\S]*?return;/);
+  assert.doesNotMatch(app, /if \(view === 'saved'\) window\.XLiveAuth\?\.renderSaved\(\);/);
+  assert.match(auth, /async function renderSaved\(\)/);
+});
+
 test('homepage has no stale content before app initialization and cache-busts assets', () => {
   assert.doesNotMatch(html, /استكشف المقاطع/);
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.match(html, /styles\\.css\\?v=20261012-3/);
-  assert.match(html, /app\\.js\\?v=20261012-3/);
+  assert.match(html, /styles\\.css\\?v=20261012-4/);
+  assert.match(html, /app\\.js\\?v=20261012-4/);
 });
