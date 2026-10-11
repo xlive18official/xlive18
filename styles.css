@@ -454,5 +454,5 @@ img, video, iframe, canvas, svg {
   body.mobile-menu-open .sidebar{display:flex!important;position:fixed;inset-block:0;inset-inline-start:0;width:min(300px,85vw);height:100dvh;overflow-y:auto;z-index:30;padding:22px 14px 16px;box-shadow:0 0 40px #0009}
   body.mobile-menu-open .sidebar .sidebar-signout{display:flex!important}
   body.mobile-menu-open .sidebar .sidebar-note{margin-bottom:6px}
-  body.mobile-menu-open .main-content{position:relative}
+  body.mobile-menu-open .main-content{position:relative}\n  body.mobile-menu-open .topbar{z-index:26}
 }
