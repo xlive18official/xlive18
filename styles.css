@@ -381,3 +381,32 @@ img, video, iframe, canvas, svg {
 .creator-preview-panel .social-actions{display:flex;flex-wrap:wrap;gap:6px}
 @media(max-width:720px){.creator-identity{padding:13px;gap:10px}.creator-avatar{width:55px;height:55px;flex-basis:55px}.creator-tabs{gap:3px;padding:4px}.creator-tabs button{font-size:.72rem;gap:3px;padding:5px 2px;flex-direction:column;min-height:34px}.creator-media-grid,.creator-photo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.creator-live-layout{grid-template-columns:1fr}.creator-panel-heading{align-items:flex-start}.creator-plus{font-size:.72rem;padding:7px 9px}}
 @media(max-width:420px){.creator-media-grid,.creator-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.creator-photo-card img{aspect-ratio:1}}
+
+
+/* Make the entire creator page visibly more compact, not just individual controls. */
+.content-wrap:has(.creator-profile){max-width:1120px;padding-top:20px}
+.content-wrap:has(.creator-profile)>.view-header{max-width:760px;margin:0 auto 14px;width:100%}
+.content-wrap:has(.creator-profile)>.view-header h1{font-size:20px;line-height:1.35;margin-bottom:4px}
+.content-wrap:has(.creator-profile)>.view-header p{font-size:11px}
+.creator-profile{max-width:760px;width:100%;margin-inline:auto;gap:9px}
+.creator-identity{padding:10px;gap:9px;border-radius:11px}
+.creator-identity h2{font-size:.9rem}
+.creator-identity p{font-size:.68rem;line-height:1.5}
+.creator-avatar{width:48px;height:48px;flex-basis:48px;font-size:1rem}
+.creator-tabs{gap:3px;padding:3px;border-radius:9px}
+.creator-tabs button{min-height:30px;padding:5px 4px;font-size:.68rem;border-radius:7px}
+.creator-panel-heading{gap:7px;margin:4px 0 8px}
+.creator-panel-heading h3{font-size:.85rem}
+.creator-panel-heading p{font-size:.65rem}
+.creator-plus{font-size:.68rem;padding:5px 8px}
+.creator-media-grid,.creator-photo-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.creator-media-grid .clip-card,.creator-photo-card{border-radius:8px}
+.creator-media-grid .clip-card-body{padding:7px;gap:5px}
+.creator-media-grid .clip-card-heading strong,.creator-media-grid .clip-card-body>p{font-size:.7rem}
+.creator-photo-card .clip-card-body{padding:5px;font-size:.68rem}
+.creator-live-layout{gap:8px}
+.creator-live-layout .simple-panel{padding:10px;border-radius:10px}
+.creator-live-layout h3{font-size:.85rem}
+.creator-preview-head{font-size:.7rem}
+@media(max-width:760px){.content-wrap:has(.creator-profile){padding:12px 10px 14px}.content-wrap:has(.creator-profile)>.view-header{margin-bottom:10px}.content-wrap:has(.creator-profile)>.view-header h1{font-size:18px}.creator-profile{gap:8px}.creator-identity{padding:9px;gap:8px}.creator-avatar{width:42px;height:42px;flex-basis:42px}.creator-tabs button{font-size:.62rem;min-height:28px}.creator-media-grid,.creator-photo-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.creator-panel-heading h3{font-size:.8rem}.creator-panel-heading p{font-size:.62rem}.creator-live-layout .simple-panel{padding:9px}}
+@media(max-width:420px){.creator-media-grid,.creator-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
