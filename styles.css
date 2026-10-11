@@ -350,3 +350,6 @@ img, video, iframe, canvas, svg {
     width: 100%;
   }
 }
+
+/* Keep hidden sidebar actions hidden despite navigation display rules. */
+[hidden]{display:none!important}
