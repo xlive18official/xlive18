@@ -90,3 +90,60 @@
 .home-feed-wrap .empty-panel{border-color:#34343b;background:#101013}
 .home-feed-wrap .home-feed-grid{margin-top:0}
 @media(max-width:560px){.home-status-strip{gap:7px}.home-status-strip>span{font-size:10px;padding:6px 9px}.home-feed-wrap{padding:9px}.feed-toolbar{align-items:flex-start;flex-direction:column;gap:3px}}
+
+
+/* Mobile-first overflow and reachability fixes */
+html,body{width:100%;max-width:100%;overflow-x:clip}
+.app-shell,.main-content,#app-view,.content-wrap{width:100%;min-width:0;max-width:100%}
+img,video,canvas,iframe{max-width:100%}
+button,a,input,textarea,select{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:760px){
+  .topbar{width:100%;min-width:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px;padding-inline:10px}
+  .mobile-brand{min-width:0;gap:5px;font-size:0}
+  .mobile-brand .brand-mark{flex:0 0 30px}
+  .search-form{width:100%;min-width:0;max-width:none}
+  .search-form input{width:100%;min-width:0}
+  .top-actions{min-width:0;gap:0}
+  .top-actions .icon-button{width:34px;min-width:34px;padding:0}
+  .content-wrap{padding-inline:12px}
+  .hero,.hero-copy,.hero-art,.section-heading,.feature-grid,.feature-card,.home-feed-wrap,.empty-panel,.view-header,.notice-panel,.simple-panel,.form-stack,.auth-panel,.messages-layout,.conversation-list,.conversation-thread,.clip-grid,.clip-card,.room-grid,.room-card,.report-card,.social-user,.notification-item{min-width:0;max-width:100%}
+  .hero{grid-template-columns:minmax(0,1fr);padding:20px 15px}
+  .hero h1{font-size:clamp(24px,7vw,30px);overflow-wrap:anywhere}
+  .hero-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .hero-actions .button{min-width:0;width:100%;padding-inline:8px;white-space:normal}
+  .feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feature-card{width:100%;overflow-wrap:anywhere}
+  .section-heading{flex-wrap:wrap;align-items:flex-start}
+  .section-heading>*{min-width:0}
+  .home-status-strip>span{white-space:normal}
+  .feed-toolbar-note{overflow-wrap:anywhere}
+  .view-header{flex-wrap:wrap;gap:10px}
+  .view-header>*,.notice-panel>*,.social-user>*{min-width:0;max-width:100%}
+  .section-grid{grid-template-columns:minmax(0,1fr)}
+  .form-stack{width:100%}
+  .field input,.field textarea,.field select{min-width:0;width:100%}
+  .social-actions{display:flex;flex-wrap:wrap}
+  .social-actions .button{flex:1 1 auto;min-width:0;white-space:normal}
+  .clip-grid,.room-grid{grid-template-columns:minmax(0,1fr)}
+  .clip-player,.home-clip-card video{max-width:100%}
+  .messages-layout{grid-template-columns:minmax(0,1fr)}
+  .message-compose{min-width:0}
+  .message-compose textarea{min-width:0;width:100%}
+  .mobile-nav{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain}
+  .mobile-nav button{min-width:0;padding-inline:2px;font-size:9px}
+}
+@media(max-width:380px){
+  .topbar{grid-template-columns:30px minmax(0,1fr) 30px;gap:5px;padding-inline:7px}
+  .mobile-brand .brand-mark{width:28px;height:28px;min-width:28px}
+  .top-actions .icon-button{width:30px;min-width:30px}
+  .search-form{gap:3px;padding-inline:5px}
+  .search-form>span{display:none}
+  .search-form input{font-size:10px}
+  .search-form button{padding:5px;font-size:9px}
+  .content-wrap{padding-inline:9px}
+  .hero-actions{grid-template-columns:minmax(0,1fr)}
+  .feature-grid{gap:7px}
+  .feature-card{padding:11px}
+  .mobile-nav button{font-size:8px}
+  .mobile-nav button span{font-size:17px}
+}
