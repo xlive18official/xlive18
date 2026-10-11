@@ -58,6 +58,12 @@
       if (el.closest('.mobile-nav')) el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 
+    if (view === 'profile') {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>جارٍ تحميل بيانات الحساب…</p></div></div><div class="simple-panel auth-panel" role="status" aria-live="polite"><p>جارٍ تجهيز الملف الشخصي…</p></div>';
+      window.XLiveAuth?.render();
+      return;
+    }
+
     // Render notifications directly to avoid flashing the obsolete placeholder page.
     if (view === 'notifications' && window.XLiveAuth?.renderNotifications) {
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACTIVITY</p><h1>الإشعارات</h1><p>جارٍ تحميل الإشعارات…</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>';
