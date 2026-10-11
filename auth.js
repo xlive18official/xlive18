@@ -408,31 +408,61 @@
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / UPLOAD</p><h1>رفع فيديو</h1><p>يُخزن الفيديو بشكل خاص ويبقى قيد المراجعة حتى الموافقة.</p></div><button class="back-home" data-view="clips">العودة للمقاطع ←</button></div><div class="notice-panel"><span class="notice-icon">ⓘ</span><div><strong>حدود الرفع</strong><p>MP4 أو WebM أو MOV، بحد أقصى 50 ميغابايت. لا يصبح الفيديو عاماً قبل الموافقة، ولا تدعم هذه الواجهة المدفوعات أو تحويل الفيديو.</p></div></div><form id="video-upload-form" class="simple-panel form-stack"><div class="field"><label for="video-title">عنوان الفيديو</label><input id="video-title" maxlength="120" required placeholder="عنوان واضح للمقطع"></div><div class="field"><label for="video-description">الوصف (اختياري)</label><textarea id="video-description" maxlength="2000" rows="3" placeholder="أضف تفاصيل عن المقطع"></textarea></div><div class="field"><label for="video-file">ملف الفيديو</label><input id="video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">الحد الأقصى 50 ميغابايت. لا ترفع محتوى لا تملك حق نشره أو يخالف إرشادات المنصة.</p></div><button class="button button-primary" id="video-upload-submit" type="submit">رفع وإرسال للمراجعة</button><p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>';
   }
 
-  async function renderHomeFeed() {
+  let homeFeedPage = 1;
+  async function renderHomeFeed(page = homeFeedPage) {
     const panel = document.getElementById('home-feed');
     if (!panel) return;
+    homeFeedPage = Math.max(1, Number(page) || 1);
+    const pager = document.getElementById('home-pagination');
     const supabase = ensureClient();
-    if (!supabase) return;
+    if (!supabase) {
+      panel.innerHTML = '<div class="empty-panel"><h3>الخدمة غير مهيأة</h3><p>تحقق من إعدادات قاعدة البيانات.</p></div>';
+      if (pager) pager.innerHTML = '';
+      return;
+    }
     await syncCurrentUser(supabase);
     try {
-      const {data, error} = await supabase.from('videos').select('id,title,description,storage_path,created_at').eq('status','approved').eq('is_paid',false).eq('visibility','public').order('created_at',{ascending:false}).limit(3);
+      const pageSize = 16;
+      const from = (homeFeedPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      const {data, error, count} = await supabase.from('videos').select('id,title,description,storage_path,created_at',{count:'exact'}).eq('status','approved').eq('is_paid',false).eq('visibility','public').order('created_at',{ascending:false}).range(from,to);
       if (error) throw error;
       const videos = data || [];
+      if (!videos.length && homeFeedPage > 1) { homeFeedPage = 1; return renderHomeFeed(1); }
       if (!videos.length) {
-        panel.innerHTML = '<div class="empty-symbol">✦</div><h3>ستبدأ القصص هنا</h3><p>لا يوجد محتوى عام مقبول بعد. لن نعرض بيانات تجريبية على أنها محتوى حقيقي.</p><span class="status-pill"><span class="status-dot"></span> بانتظار نشر أول فيديو مقبول</span>';
-        return;
+        panel.className = 'home-feed-grid';
+        panel.innerHTML = '<div class="empty-panel home-feed-empty"><div class="empty-symbol">✦</div><h3>لا توجد مقاطع عامة بعد</h3><p>ستظهر هنا المقاطع التي ينشرها المستخدمون للعامة بعد اجتياز المراجعة.</p><span class="status-pill"><span class="status-dot"></span> بانتظار نشر أول فيديو مقبول</span></div>';
+      } else {
+        const cards = await Promise.all(videos.map(async v => {
+          const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path,3600);
+          return '<article class="home-clip-card">' + (signed?.signedUrl ? '<video controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '" aria-label="' + escapeHtml(v.title) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح</div>') + '<div><strong>' + escapeHtml(v.title) + '</strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '</div></article>';
+        }));
+        panel.className = 'home-feed-grid';
+        panel.innerHTML = cards.join('');
       }
-      const cards = await Promise.all(videos.map(async v => {
-        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path,3600);
-        return '<article class="home-clip-card">' + (signed?.signedUrl ? '<video controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح</div>') + '<div><strong>' + escapeHtml(v.title) + '</strong><p>' + escapeHtml(v.description || '') + '</p></div></article>';
-      }));
-      panel.className = 'home-feed-grid';
-      panel.innerHTML = cards.join('');
+      const totalPages = Math.max(1, Math.ceil((count || 0) / pageSize));
+      if (pager) {
+        if (totalPages <= 1) pager.innerHTML = '';
+        else {
+          const pages = [];
+          const first = Math.max(1, Math.min(homeFeedPage - 2, totalPages - 4));
+          const last = Math.min(totalPages, Math.max(5, homeFeedPage + 2));
+          for (let p = first; p <= last; p++) pages.push('<button type="button" class="home-page-number ' + (p === homeFeedPage ? 'active' : '') + '" data-feed-page="' + p + '" aria-current="' + (p === homeFeedPage ? 'page' : 'false') + '">' + p + '</button>');
+          pager.innerHTML = '<button type="button" class="home-page-arrow" data-feed-page="' + Math.max(1,homeFeedPage-1) + '" aria-label="الصفحة السابقة" ' + (homeFeedPage === 1 ? 'disabled' : '') + '>‹</button>' + pages.join('') + '<button type="button" class="home-page-arrow" data-feed-page="' + Math.min(totalPages,homeFeedPage+1) + '" aria-label="الصفحة التالية" ' + (homeFeedPage === totalPages ? 'disabled' : '') + '>›</button>';
+        }
+      }
     } catch (error) {
-      panel.innerHTML = '<p class="field-help">تعذر تحميل آخر المقاطع حالياً.</p>';
+      panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من اتصال قاعدة البيانات ثم حاول مجدداً.</p></div>';
+      if (pager) pager.innerHTML = '';
       console.error('XLive home feed error',error);
     }
   }
+  document.addEventListener('click', event => {
+    const pageButton = event.target.closest('[data-feed-page]');
+    if (!pageButton || pageButton.disabled) return;
+    event.preventDefault();
+    renderHomeFeed(Number(pageButton.dataset.feedPage));
+  });
 
   async function renderClips() {
     const supabase = ensureClient();
