@@ -63,6 +63,12 @@
       return;
     }
 
+    if (view === 'messages') {
+      root.innerHTML = '<section class="home-page"><div class="view-header"><div><p class="eyebrow">XLIVE 18 / MESSAGES</p><h1>الرسائل الخاصة</h1><p>جارٍ تحميل المحادثات…</p></div></div><div class="messages-layout"><aside class="conversation-list"><h2>المحادثات</h2><p class="field-help">جارٍ تحميل القائمة…</p></aside><section class="conversation-thread"><div class="message-empty"><p>جارٍ فتح الرسائل…</p></div></section></div></section>';
+      window.XLiveAuth?.renderMessages();
+      return;
+    }
+
     const meta = views[view];
     let body = '';
     if (view === 'upload') {
