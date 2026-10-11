@@ -70,8 +70,8 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; if (passwordRecoveryActive) return; if (user) window.XLiveApp?.render('home'); else renderProfile(); }).catch(() => {});
-    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive && event === 'SIGNED_IN' && user) window.XLiveApp?.render('home'); else if (!passwordRecoveryActive) renderProfile(); });
+    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; if (passwordRecoveryActive) return; if (user) { document.body.classList.remove('auth-only'); window.XLiveApp?.render('home'); } else renderProfile(); }).catch(() => {});
+    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive && event === 'SIGNED_IN' && user) { document.body.classList.remove('auth-only'); window.XLiveApp?.render('home'); } else if (!passwordRecoveryActive) { if (!user) { document.body.classList.add('auth-only'); window.XLiveApp?.render('profile'); } else renderProfile(); } });
     subscription = result?.data?.subscription || null;
     return client;
   }
