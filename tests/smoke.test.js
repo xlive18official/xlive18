@@ -313,3 +313,9 @@ test('homepage has no stale content before app initialization and cache-busts as
 test('auth session callbacks cannot replace homepage with the profile screen', () => {
   assert.match(auth, /async function renderProfile\(\) \{\s*\/\/ Auth session callbacks may finish while the user is on another page; never let them replace the homepage\.\s*if \(!document\.querySelector\('\[data-view\]\.active'\)\?\.matches\('\[data-view=\\"profile\\"\]'\)\) return;/);
 });
+
+
+test('application starts on the homepage instead of briefly showing the profile screen', () => {
+  assert.match(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('home'\);\s*\}\)\(\);/);
+  assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('profile'\);/);
+});
