@@ -308,3 +308,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.match(html, /styles\\.css\\?v=20261012-4/);
   assert.match(html, /app\\.js\\?v=20261012-4/);
 });
+
+
+test('auth session callbacks cannot replace homepage with the profile screen', () => {
+  assert.match(auth, /async function renderProfile\(\) \{\s*\/\/ Auth session callbacks may finish while the user is on another page; never let them replace the homepage\.\s*if \(!document\.querySelector\('\[data-view\]\.active'\)\?\.matches\('\[data-view=\\"profile\\"\]'\)\) return;/);
+});
