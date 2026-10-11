@@ -8,6 +8,7 @@ const files = [
   "styles.css",
   "app.js",
   "auth.js",
+  "site-editor.js",
   "supabase-config.js",
 ];
 
