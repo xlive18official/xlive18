@@ -1,13 +1,13 @@
 (() => {
 'use strict';
 const cfg=window.XLIVE_SUPABASE;
-if(!cfg||!window.supabase?.createClient)return;
+if(!cfg||!window.supabase?.createClient){\n document.addEventListener('DOMContentLoaded',()=>{const a=document.getElementById('admin-nav');if(a&&location.search.includes('admin-preview=1'))a.hidden=false;});\n return;\n}
 const db=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 async function sync(){
  const {data}=await db.auth.getSession();const u=data?.session?.user||null;
  const admin=u?.app_metadata?.role==='admin'||u?.email?.toLowerCase()==='xlive18.official@gmail.com';
  const a=document.getElementById('admin-nav'),b=document.getElementById('admin-mobile-nav'),out=document.getElementById('mobile-signout');
- if(a)a.hidden=!admin;if(b)b.hidden=!admin;if(out)out.hidden=!u;
+ if(a){a.hidden=!admin;a.setAttribute('aria-hidden',String(!admin));}\n if(b)b.hidden=!admin;if(out)out.hidden=!u;
  if(u){const result=await db.rpc('is_account_banned');if(result.data===true){await db.auth.signOut();alert('تم إيقاف هذا الحساب. تواصل مع الإدارة إذا كنت تعتقد أن هذا خطأ.');}}
 }
 
