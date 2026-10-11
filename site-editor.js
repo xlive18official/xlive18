@@ -4,16 +4,25 @@
   let client;
   let design = {};
   const $ = id => document.getElementById(id);
+  function setEditorVisibility(session) {
+    const admin = session?.user?.app_metadata?.role === 'admin';
+    document.querySelectorAll('[data-view="editor"]').forEach(el => el.hidden = !admin);
+  }
   async function init() {
     if (!window.supabase || !cfg?.url || !cfg?.key) return;
     client = window.supabase.createClient(cfg.url, cfg.key);
-    const {data:{session}} = await client.auth.getSession();
-    const admin = session?.user?.app_metadata?.role === 'admin';
-    document.querySelectorAll('[data-view="editor"]').forEach(el => el.hidden = !admin);
-    if (!admin) return;
-    const {data} = await client.from('site_page_designs').select('design').eq('page_key','home').maybeSingle();
-    design = data?.design || {};
-    apply();
+    try {
+      const {data:{session}} = await client.auth.getSession();
+      setEditorVisibility(session);
+      client.auth.onAuthStateChange((_event, nextSession) => setEditorVisibility(nextSession));
+      // Published design is public; load it for every visitor, not only administrators.
+      const {data, error} = await client.from('site_page_designs').select('design').eq('page_key','home').maybeSingle();
+      if (error) throw error;
+      design = data?.design || {};
+      apply();
+    } catch (error) {
+      console.error('XLIVE18 design initialization failed:', error);
+    }
   }
   function apply() {
     const hero = document.querySelector('.hero');
