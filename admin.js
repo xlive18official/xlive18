@@ -3,7 +3,7 @@
 const config=window.XLIVE_SUPABASE;
 const root=document.getElementById('app-view');
 if(!config||!window.supabase?.createClient||!root)return;
-const db=window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=window.XLiveAuth?.getClient?.() || window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=v=>v?new Date(v).toLocaleDateString('ar'): '—';
 async function userNow(){const {data}=await db.auth.getSession();return data?.session?.user||null}
@@ -32,7 +32,7 @@ async function render(){
 }
 document.addEventListener('click',async e=>{
  const nav=e.target.closest('#admin-nav,#admin-mobile-nav,[data-view="admin"]');
- if(nav){e.preventDefault();e.stopImmediatePropagation();await render();return}
+ if(nav){e.preventDefault();e.stopImmediatePropagation();if(!root){alert('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}if(!window.XLIVE_SUPABASE||!window.supabase?.createClient){root.innerHTML='<div class="view-header"><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر الاتصال بخدمة الإدارة</h3><p>تحقق من تحميل إعدادات Supabase ثم أعد تحميل الصفحة.</p></div>';return}await render();return}
  const b=e.target.closest('[data-admin-action]');if(!b)return;
  e.preventDefault();e.stopImmediatePropagation();
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
