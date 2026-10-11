@@ -463,3 +463,6 @@ img, video, iframe, canvas, svg {
 .sidebar{justify-content:flex-start}
 .sidebar-bottom{margin-top:auto;display:grid;gap:8px}
 .sidebar-bottom .nav-item{justify-content:flex-start}
+
+/* Respect hidden on controls despite component display rules. */
+.sidebar [hidden],.mobile-nav [hidden]{display:none!important}
