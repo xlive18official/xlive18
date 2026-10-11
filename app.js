@@ -51,6 +51,11 @@
   }
 
   function render(view, extra = '') {
+    if (view === 'admin') {
+      if (window.XLiveAdmin?.render) { window.XLiveAdmin.render(); return; }
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1><p>جارٍ تجهيز لوحة الإدارة…</p></div></div><div class="simple-panel" role="status">خدمة الإدارة لم تُحمّل بعد. أعد تحميل الصفحة وحاول مجدداً.</div>';
+      return;
+    }
     if (!views[view]) view = 'home';
     if (view === 'editor') { if (window.XLiveSiteEditor) window.XLiveSiteEditor.renderEditor(); else root.innerHTML = '<p>المحرّر قيد التحميل…</p>'; return; }
     document.querySelectorAll('[data-view]').forEach(el => {
@@ -157,6 +162,11 @@
     if (!target) return;
     event.preventDefault();
     const requestedView = target.dataset.view;
+    if (requestedView === 'admin') {
+      render('admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     if (requestedView !== 'profile' && !window.XLiveAuth?.getUser()) {
       render('profile');
       window.XLiveAuth?.render();
