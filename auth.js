@@ -46,6 +46,88 @@
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACCOUNT SECURITY</p><h1>تعيين كلمة مرور جديدة</h1><p>اختر كلمة مرور جديدة لحسابك.</p></div></div><form id="password-update-form" class="simple-panel form-stack"><div class="field"><label for="new-password">كلمة المرور الجديدة</label><input id="new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="field"><label for="confirm-password">تأكيد كلمة المرور</label><input id="confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><button id="password-update-submit" class="button button-primary" type="submit">حفظ كلمة المرور</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>';
   }
 
+
+  let creatorTab = 'videos';
+  let creatorUploadOpen = false;
+  let creatorCameraStream = null;
+
+  async function renderCreatorProfile(tab = creatorTab) {
+    creatorTab = ['videos','photos','live'].includes(tab) ? tab : 'videos';
+    if (!document.querySelector('[data-view].active')?.matches('[data-view="creator"]')) return;
+    const supabase = ensureClient();
+    await syncCurrentUser(supabase);
+    if (!supabase || !user) {
+      root.innerHTML = '<div class="simple-panel"><h2>الصفحة الشخصية</h2><p>سجّل الدخول لعرض منشوراتك وإنشاء بث.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
+      return;
+    }
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CREATOR</p><h1>الصفحة الشخصية</h1><p>منشوراتك وصورك وإعداد البث المباشر.</p></div></div><div class="creator-profile"><div class="creator-identity" id="creator-identity"><div class="creator-avatar">◎</div><div><h2>جارٍ تحميل الملف…</h2></div></div><div class="creator-tabs" role="tablist" aria-label="محتوى الصفحة الشخصية"><button type="button" data-creator-tab="videos" class="' + (creatorTab === 'videos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'videos') + '"><span>▣</span> المقاطع</button><button type="button" data-creator-tab="photos" class="' + (creatorTab === 'photos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'photos') + '"><span>▧</span> الصور</button><button type="button" data-creator-tab="live" class="' + (creatorTab === 'live' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'live') + '"><span>●</span> إنشاء بث لايف</button></div><div id="creator-tab-content" class="creator-tab-content"><p class="field-help">جارٍ تحميل المحتوى…</p></div></div>';
+    const {data: profile} = await supabase.from('profiles').select('username,display_name,bio,avatar_path').eq('id', user.id).maybeSingle();
+    if (!document.querySelector('[data-view].active')?.matches('[data-view="creator"]') || !user) return;
+    const identity = document.getElementById('creator-identity');
+    if (identity) {
+      let avatar = '<div class="creator-avatar" aria-hidden="true">' + escapeHtml((profile?.display_name || profile?.username || user.email || 'م').slice(0,1).toUpperCase()) + '</div>';
+      if (profile?.avatar_path) {
+        const {data: signedAvatar} = await supabase.storage.from('photo-originals').createSignedUrl(profile.avatar_path, 3600);
+        if (signedAvatar?.signedUrl) avatar = '<img class="creator-avatar" src="' + escapeHtml(signedAvatar.signedUrl) + '" alt="صورة المستخدم">';
+      }
+      identity.innerHTML = avatar + '<div><h2>' + escapeHtml(profile?.display_name || profile?.username || 'مستخدم XLive18') + '</h2><p>@' + escapeHtml(profile?.username || '') + '</p><p class="creator-bio">' + escapeHtml(profile?.bio || 'أهلاً بك في صفحتي الشخصية.') + '</p></div>';
+    }
+    const panel = document.getElementById('creator-tab-content');
+    if (!panel) return;
+    if (creatorTab === 'videos') {
+      let query = supabase.from('videos').select('id,title,description,storage_path,status,created_at').eq('owner_id', user.id).order('created_at',{ascending:false}).limit(60);
+      const {data: rows, error} = await query;
+      if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من إعدادات قاعدة البيانات والصلاحيات.</p></div>'; return; }
+      const cards = await Promise.all((rows || []).map(async v => {
+        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
+        const media = signed?.signedUrl ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">المعاينة غير متاحة</div>';
+        const status = v.status === 'approved' ? 'منشور' : v.status === 'rejected' ? 'مرفوض' : v.status === 'removed' ? 'محذوف' : 'قيد المراجعة';
+        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
+      }));
+      panel.innerHTML = '<div class="creator-panel-heading"><div><h3>مقاطعك</h3><p>تظهر المقاطع العامة بعد الموافقة على المراجعة.</p></div><button class="button button-primary creator-plus" type="button" data-creator-upload="video" aria-label="إضافة مقطع">＋ إضافة مقطع</button></div>' +
+        (creatorUploadOpen ? '<form id="creator-video-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-video-title">عنوان المقطع</label><input id="creator-video-title" maxlength="120" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3"></textarea></div><div class="field"><label for="creator-video-file">ملف الفيديو</label><input id="creator-video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p></div><button class="button button-primary" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
+        (cards.length ? '<div class="creator-media-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>لسه ما نشرت مقاطع</h3><p>اضغط «إضافة مقطع» لرفع أول فيديو. سيبقى قيد المراجعة قبل نشره للعامة.</p></div>');
+    } else if (creatorTab === 'photos') {
+      const {data: photos, error} = await supabase.from('photos').select('id,title,description,storage_path,status,created_at').eq('owner_id', user.id).order('created_at',{ascending:false}).limit(100);
+      if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل الصور</h3><p>تأكد من تطبيق ترحيل قاعدة البيانات الخاص بالصور.</p></div>'; return; }
+      const cards = await Promise.all((photos || []).map(async p => {
+        const {data: signed} = await supabase.storage.from('photo-originals').createSignedUrl(p.storage_path, 3600);
+        return '<article class="creator-photo-card">' + (signed?.signedUrl ? '<img src="' + escapeHtml(signed.signedUrl) + '" alt="' + escapeHtml(p.title || 'صورة منشورة') + '" loading="lazy">' : '<div class="clip-placeholder">الصورة غير متاحة</div>') + '<div class="clip-card-body"><strong>' + escapeHtml(p.title || 'صورة') + '</strong><span class="status-pill">' + (p.status === 'approved' ? 'منشورة' : p.status === 'rejected' ? 'مرفوضة' : 'قيد المراجعة') + '</span></div></article>';
+      }));
+      panel.innerHTML = '<div class="creator-panel-heading"><div><h3>صورك</h3><p>تُحفظ الصور بشكل خاص وتبقى قيد المراجعة قبل النشر.</p></div><button class="button button-primary creator-plus" type="button" data-creator-upload="photo" aria-label="إضافة صورة">＋ إضافة صورة</button></div>' +
+        (creatorUploadOpen ? '<form id="creator-photo-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-photo-title">عنوان الصورة (اختياري)</label><input id="creator-photo-title" maxlength="120" placeholder="عنوان بسيط"></div><div class="field"><label for="creator-photo-description">الوصف (اختياري)</label><textarea id="creator-photo-description" maxlength="2000" rows="2"></textarea></div><div class="field"><label for="creator-photo-file">ملف الصورة</label><input id="creator-photo-file" type="file" accept="image/jpeg,image/png,image/webp" required><p class="field-help">JPG أو PNG أو WebP — حتى 10 ميغابايت.</p></div><button class="button button-primary" id="creator-photo-submit" type="submit">رفع الصورة وإرسالها للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
+        (cards.length ? '<div class="creator-photo-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>ما في صور لحد الآن</h3><p>اضغط «إضافة صورة» لاختيار صورة من جهازك ورفعها بأمان.</p></div>');
+    } else {
+      panel.innerHTML = '<div class="creator-live-layout"><div class="simple-panel form-stack"><p class="eyebrow">LIVE STUDIO</p><h3>إعداد البث المباشر</h3><p class="field-help">جهّز عنوان البث والكاميرا والميكروفون قبل البدء. إنشاء بث فعلي يحتاج ربط مزوّد بث وإعدادات خادم آمنة؛ لن نعلن أنك مباشر قبل توفر الاتصال الحقيقي.</p><form id="creator-live-form" class="form-stack"><div class="field"><label for="creator-live-title">عنوان البث</label><input id="creator-live-title" maxlength="120" required placeholder="شو موضوع بثك؟"></div><div class="field"><label for="creator-live-description">وصف البث</label><textarea id="creator-live-description" maxlength="1000" rows="3" placeholder="عرّف المشاهدين على البث"></textarea></div><div class="field"><label for="creator-live-mode">نوع البث</label><select id="creator-live-mode"><option value="video">كاميرا وصوت</option><option value="audio">صوت فقط</option></select></div><div class="field"><label for="creator-live-visibility">الخصوصية</label><select id="creator-live-visibility"><option value="public">عام</option><option value="private">خاص</option></select></div><div class="field"><label for="creator-live-capacity">السعة</label><select id="creator-live-capacity"><option value="2">2 مشاركين</option><option value="8" selected>8 مشاركين</option><option value="12">12 مشاركاً</option><option value="25">25 مشاركاً</option><option value="50">50 مشاركاً</option></select></div><button class="button button-primary" id="creator-live-submit" type="submit">حفظ إعدادات البث</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div><div class="simple-panel creator-preview-panel"><div class="creator-preview-head"><strong>معاينة الكاميرا</strong><span class="status-pill">معاينة محلية</span></div><video id="creator-camera-preview" autoplay muted playsinline></video><p class="field-help">المعاينة على جهازك فقط، ولا يتم بثها للمشاهدين.</p><div class="social-actions"><button class="button button-secondary" type="button" data-creator-camera="start">تشغيل الكاميرا والميكروفون</button><button class="button button-secondary" type="button" data-creator-camera="stop">إيقاف المعاينة</button></div></div></div>';
+    }
+  }
+
+  document.addEventListener('click', async event => {
+    const tab = event.target.closest('[data-creator-tab]');
+    if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab); return; }
+    const upload = event.target.closest('[data-creator-upload]');
+    if (upload) { event.preventDefault(); creatorUploadOpen = !creatorUploadOpen; await renderCreatorProfile(upload.dataset.creatorUpload === 'photo' ? 'photos' : 'videos'); return; }
+    const camera = event.target.closest('[data-creator-camera]');
+    if (camera) {
+      event.preventDefault();
+      const feedbackNode = document.getElementById('creator-feedback');
+      if (camera.dataset.creatorCamera === 'stop') {
+        if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop());
+        creatorCameraStream = null;
+        const preview = document.getElementById('creator-camera-preview'); if (preview) preview.srcObject = null;
+        if (feedbackNode) feedbackNode.textContent = 'تم إيقاف المعاينة.';
+        return;
+      }
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
+        if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop());
+        creatorCameraStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+        const preview = document.getElementById('creator-camera-preview'); if (preview) preview.srcObject = creatorCameraStream;
+        if (feedbackNode) feedbackNode.textContent = 'المعاينة تعمل محلياً فقط؛ لم يبدأ بث للمشاهدين.';
+      } catch (error) { if (feedbackNode) feedbackNode.textContent = 'تعذر تشغيل الكاميرا أو الميكروفون. تحقق من أذونات المتصفح واتصال HTTPS.'; }
+    }
+  });
+
   async function renderProfile() {
     // Auth session callbacks may finish while the user is on another page; never let them replace the homepage.
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
@@ -126,6 +208,62 @@
       if (error) { feedback('تعذر تحديث كلمة المرور. افتح رابط الاستعادة الجديد وحاول مجدداً.'); button.disabled=false; button.textContent='حفظ كلمة المرور'; return; }
       passwordRecoveryActive = false;
       root.innerHTML = '<div class="simple-panel"><h2>تم تحديث كلمة المرور</h2><p>يمكنك الآن استخدام كلمة المرور الجديدة.</p><button class="button button-primary" data-view="profile">العودة إلى الحساب</button></div>';
+      return;
+    }
+    if (event.target.id === 'creator-photo-upload-form') {
+      event.preventDefault();
+      const supabase = ensureClient(); await syncCurrentUser(supabase);
+      if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
+      const file = document.getElementById('creator-photo-file')?.files?.[0];
+      const allowed = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+      if (!file || !allowed[file.type]) { messageSocial('اختر صورة JPG أو PNG أو WebP.'); return; }
+      if (file.size > 10 * 1024 * 1024) { messageSocial('حجم الصورة يتجاوز 10 ميغابايت.'); return; }
+      const button = document.getElementById('creator-photo-submit'); button.disabled = true; button.textContent = 'جارٍ رفع الصورة…';
+      let path = '';
+      try {
+        const id = window.crypto?.randomUUID?.(); if (!id) throw new Error('Secure random IDs unavailable');
+        path = user.id + '/' + id + '.' + allowed[file.type];
+        const {error: uploadError} = await supabase.storage.from('photo-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
+        if (uploadError) throw uploadError;
+        const {error: rowError} = await supabase.from('photos').insert({owner_id:user.id,title:document.getElementById('creator-photo-title')?.value.trim() || '',description:document.getElementById('creator-photo-description')?.value.trim() || '',storage_path:path,status:'pending',visibility:'public'});
+        if (rowError) { await supabase.storage.from('photo-originals').remove([path]); throw rowError; }
+        creatorUploadOpen = false; await renderCreatorProfile('photos'); messageSocial('تم رفع الصورة وإرسالها للمراجعة. لن تُنشر للعامة قبل الموافقة.');
+      } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الصورة. تأكد من تطبيق ترحيل الصور والصلاحيات ثم حاول مجدداً.'; console.error('XLive photo upload error',error); if (document.getElementById('creator-photo-submit')) { button.disabled=false; button.textContent='رفع الصورة وإرسالها للمراجعة'; } }
+      return;
+    }
+    if (event.target.id === 'creator-video-upload-form') {
+      event.preventDefault();
+      const supabase = ensureClient(); await syncCurrentUser(supabase);
+      if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
+      const title=document.getElementById('creator-video-title')?.value.trim(), description=document.getElementById('creator-video-description')?.value.trim() || '', file=document.getElementById('creator-video-file')?.files?.[0];
+      const allowed={'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
+      if (!title || title.length>120 || description.length>2000) { messageSocial('تحقق من العنوان والوصف.'); return; }
+      if (!file || !allowed[file.type]) { messageSocial('اختر فيديو MP4 أو WebM أو MOV.'); return; }
+      if (file.size>50*1024*1024) { messageSocial('حجم الفيديو يتجاوز 50 ميغابايت.'); return; }
+      const button=document.getElementById('creator-video-submit'); button.disabled=true; button.textContent='جارٍ الرفع…';
+      let path='';
+      try {
+        const id=window.crypto?.randomUUID?.(); if (!id) throw new Error('Secure random IDs unavailable');
+        path=user.id+'/'+id+'.'+allowed[file.type];
+        const {error: uploadError}=await supabase.storage.from('video-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
+        if (uploadError) throw uploadError;
+        const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,status:'pending',visibility:'public',is_paid:false});
+        if (rowError) { await supabase.storage.from('video-originals').remove([path]); throw rowError; }
+        creatorUploadOpen=false; await renderCreatorProfile('videos'); messageSocial('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
+      } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الفيديو. تحقق من إعدادات التخزين والصلاحيات وحجم الملف.'; console.error('XLive creator video upload error',error); if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; } }
+      return;
+    }
+    if (event.target.id === 'creator-live-form') {
+      event.preventDefault();
+      const supabase=ensureClient(); await syncCurrentUser(supabase);
+      if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
+      const button=document.getElementById('creator-live-submit'); button.disabled=true; button.textContent='جارٍ حفظ الإعدادات…';
+      const room={host_id:user.id,title:document.getElementById('creator-live-title').value.trim(),description:document.getElementById('creator-live-description').value.trim(),media_mode:document.getElementById('creator-live-mode').value,visibility:document.getElementById('creator-live-visibility').value,capacity:Number(document.getElementById('creator-live-capacity').value),status:'pending'};
+      try {
+        const {error}=await supabase.from('rooms').insert(room); if (error) throw error;
+        const f=document.getElementById('creator-feedback'); if (f) f.textContent='تم حفظ إعدادات البث كطلب. البث الفعلي لن يبدأ حتى يتم ربط مزوّد البث وإعداداته الآمنة.';
+        button.disabled=false; button.textContent='تم حفظ إعدادات البث';
+      } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر حفظ إعدادات البث. تحقق من الاتصال والصلاحيات.'; console.error('XLive creator live setup error',error); button.disabled=false; button.textContent='حفظ إعدادات البث'; }
       return;
     }
     if (event.target.id === 'room-create-form') {
@@ -679,6 +817,6 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, getUser: () => user, cleanup: () => subscription?.unsubscribe() };
+  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, renderCreatorProfile, getUser: () => user, cleanup: () => { subscription?.unsubscribe(); if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop()); } };
   if (document.getElementById('home-feed')) renderHomeFeed();
 })();
