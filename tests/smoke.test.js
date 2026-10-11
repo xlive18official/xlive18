@@ -285,3 +285,10 @@ test('authenticated profile editing is scoped to the current user', () => {
   assert.match(auth, /id="profile-private" type="checkbox"/);
   assert.match(auth, /maxlength="500"/);
 });
+
+
+test('homepage does not render the removed clips CTA before app hydration', () => {
+  assert.doesNotMatch(html, /استكشف المقاطع/);
+  assert.match(html, /styles\.css\?v=20261012-1/);
+  assert.match(html, /app\.js\?v=20261012-1/);
+});
