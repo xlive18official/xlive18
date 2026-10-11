@@ -180,5 +180,5 @@
   });
 
   window.XLiveApp = { render, showToast };
-  render('profile');
+  render('home');
 })();
