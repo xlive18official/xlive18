@@ -444,3 +444,15 @@ img, video, iframe, canvas, svg {
 .admin-item-info small,.admin-user-row small{color:var(--muted,#aaa);font-size:12px}
 .admin-user-row{align-items:center;justify-content:space-between}.admin-user-row>div:first-child{min-width:0;overflow-wrap:anywhere}
 @media(max-width:700px){.admin-queue-card{flex-direction:column}.admin-media-preview{width:100%;max-width:100%;max-height:220px}.admin-user-row{align-items:flex-start;flex-direction:column}.admin-user-row .social-actions{width:100%;flex-wrap:wrap}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Mobile sidebar drawer and visible menu control */
+.mobile-menu-toggle{display:none;border:1px solid var(--line);background:#141417;border-radius:10px;width:38px;height:38px;flex:0 0 38px;font-size:20px;align-items:center;justify-content:center}
+@media(max-width:760px){
+  .mobile-menu-toggle{display:flex}
+  body.mobile-menu-open::before{content:"";position:fixed;inset:0;background:#0009;z-index:25}
+  body.mobile-menu-open .sidebar{display:flex!important;position:fixed;inset-block:0;inset-inline-start:0;width:min(300px,85vw);height:100dvh;overflow-y:auto;z-index:30;padding:22px 14px 16px;box-shadow:0 0 40px #0009}
+  body.mobile-menu-open .sidebar .sidebar-signout{display:flex!important}
+  body.mobile-menu-open .sidebar .sidebar-note{margin-bottom:6px}
+  body.mobile-menu-open .main-content{position:relative}
+}
