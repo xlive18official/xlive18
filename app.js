@@ -60,6 +60,7 @@
 
     if (view === 'home') {
       root.innerHTML = homeMarkup();
+      window.XLiveSiteEditor?.apply();
       bindLocalActions();
       window.XLiveAuth?.renderHomeFeed();
       return;
