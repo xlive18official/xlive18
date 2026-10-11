@@ -269,3 +269,13 @@ body.auth-only .page-footer { display: none; }
   body.auth-only .auth-panel { padding: 18px; }
   .auth-brand { margin-bottom: 26px; }
 }
+
+
+/* Visual site editor */
+.site-editor .form-stack{max-width:760px;gap:16px}
+.site-editor .field{display:grid;gap:7px;font-size:13px;color:var(--text)}
+.site-editor input:not([type=color]):not([type=file]),.site-editor textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface,#101013);color:var(--text)}
+.site-editor input[type=file]{width:100%;padding:12px;border:1px dashed var(--line);border-radius:10px;background:#101013;color:var(--text)}
+.site-editor input[type=color]{width:70px;height:42px;border:1px solid var(--line);border-radius:9px;background:#101013;padding:3px}
+#ed-status{color:#8de0b2;font-size:12px;overflow-wrap:anywhere}
+[data-view="editor"][hidden]{display:none!important}
