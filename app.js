@@ -14,6 +14,7 @@
     notifications: { title: 'الإشعارات', subtitle: 'إشعارات الحساب والتفاعلات والمراجعة ستُحفظ على الخادم.' },
     saved: { title: 'المحتوى المحفوظ', subtitle: 'ستظهر هنا المقاطع التي تحفظها في حسابك.' },
     profile: { title: 'ملفي الشخصي', subtitle: 'إدارة الملف الشخصي تتطلب تسجيل الدخول وربط الحسابات.' },
+    creator: { title: 'الصفحة الشخصية', subtitle: 'مقاطعك وصورك وإعداد البث المباشر.' },
     settings: { title: 'الإعدادات والخصوصية', subtitle: 'خيارات الأمان والخصوصية ستُربط بالحساب عند تنفيذ نظام المصادقة.' },
     purchases: { title: 'المشتريات والمحتوى المدفوع', subtitle: 'لا توجد مدفوعات مفعّلة حالياً. لن يتم عرض محتوى مدفوع على أنه قابل للشراء.' },
     search: { title: 'البحث والاستكشاف', subtitle: 'البحث الفعلي يحتاج إلى فهرسة بيانات المنصة المنشورة.' },
@@ -57,6 +58,12 @@
       el.classList.toggle('active', active);
       if (el.closest('.mobile-nav')) el.setAttribute('aria-current', active ? 'page' : 'false');
     });
+
+    if (view === 'creator') {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CREATOR</p><h1>الصفحة الشخصية</h1><p>جارٍ تحميل منشوراتك…</p></div></div><div class="simple-panel"><p>جارٍ تجهيز الصفحة الشخصية…</p></div>';
+      window.XLiveAuth?.renderCreatorProfile();
+      return;
+    }
 
     if (view === 'profile') {
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>جارٍ تحميل بيانات الحساب…</p></div></div><div class="simple-panel auth-panel" role="status" aria-live="polite"><p>جارٍ تجهيز الملف الشخصي…</p></div>';
