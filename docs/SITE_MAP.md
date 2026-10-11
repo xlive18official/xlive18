@@ -22,7 +22,8 @@ flowchart TD
   E -. المحرر .-> K
   K --> L[wrangler.jsonc]
   L --> M[Cloudflare Worker: xlive18]
-  N[GitHub Actions: CI فقط] --> O[فحص الصياغة واختبارات smoke]
+  N[GitHub Actions CI] --> O[فحص الصياغة واختبارات smoke]
+  P[deploy-cloudflare.yml عند push إلى main] --> M
 ```
 
 ## أين يتم تعديل كل شيء؟
@@ -38,7 +39,8 @@ flowchart TD
 | إعدادات الجداول والصلاحيات والتخزين | `supabase/migrations/` | مخطط قاعدة البيانات وRLS وسياسات Storage |
 | تجهيز ملفات Cloudflare | `scripts/prepare-cloudflare.mjs` | نسخ الملفات المطلوبة إلى `dist/` |
 | إعداد نشر Worker | `wrangler.jsonc` | اسم Worker ومجلد الملفات الثابتة |
-| الفحص الآلي | `.github/workflows/ci.yml`, `tests/smoke.test.js` | فحص JavaScript واختبارات بنيوية؛ لا ينشر الموقع |
+| الفحص الآلي | `.github/workflows/ci.yml`, `tests/smoke.test.js` | فحص JavaScript واختبارات بنيوية |
+| النشر الآلي | `.github/workflows/deploy-cloudflare.yml` | يبني `dist/` وينشر Worker عند الدفع إلى `main`؛ يحتاج سر GitHub باسم `CLOUDFLARE_API_TOKEN` |
 
 ## العطل الذي تم العثور عليه
 
@@ -54,6 +56,6 @@ flowchart TD
 
 ## النشر: النقطة التي يجب عدم تجاوزها
 
-ملف `.github/workflows/ci.yml` يشغّل الفحوصات فقط؛ لا يوجد فيه أمر نشر إلى Cloudflare. إعداد البناء الصحيح في GitHub وحده لا يغيّر Worker المنشور تلقائيًا ما لم يكن هناك نشر متصل ومفعّل في إعدادات Cloudflare أو نشر صريح عبر Wrangler.
+أُضيف ملف `.github/workflows/deploy-cloudflare.yml` لينفذ البناء والنشر تلقائيًا عند الدفع إلى `main`. يحتاج إلى GitHub Actions secret باسم `CLOUDFLARE_API_TOKEN` بصلاحية تعديل Workers؛ معرّف الحساب موجود في إعدادات سير العمل. إذا لم يكن السر مضبوطًا، سيُظهر سير العمل خطأ صريحًا ولن ينشر.
 
-لذلك يجب التحقق من **نسخة Worker المنشورة** بعد البناء، لا الاكتفاء برؤية Commit جديد في GitHub. إذا بقي الموقع كما هو بعد تعديل الملفات، فأول نقطة فحص هي آخر Deployment في Cloudflare ثم طلب الملف `/site-editor.js` من النطاق المنشور، وبعدها فحص جلسة المدير وصلاحية `app_metadata.role`.
+لا أعتبر الإصلاح منشورًا حتى ينجح سير النشر ويُتحقق من النسخة الحية. بعد نجاحه، يجب طلب الملف `/site-editor.js` من النطاق المنشور، ثم فحص جلسة المدير وصلاحية `app_metadata.role` إذا ظل الزر مخفيًا.
