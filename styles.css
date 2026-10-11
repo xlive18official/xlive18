@@ -472,11 +472,12 @@ img, video, iframe, canvas, svg {
 .sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin-bottom:12px}
 .sidebar-close{display:none;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:9px;background:rgba(255,255,255,.05);color:inherit;font-size:20px;line-height:1;cursor:pointer}
 @media(max-width:760px){
- body.mobile-menu-open .sidebar{inset-block:auto!important;top:10px;bottom:76px;width:min(220px,58vw)!important;height:auto!important;max-height:calc(100dvh - 100px);min-height:0;overflow-y:auto;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 10px 10px;gap:8px;box-shadow:0 12px 36px #0008;backdrop-filter:blur(18px)}
- body.mobile-menu-open .sidebar-heading{margin-bottom:8px}
- body.mobile-menu-open .sidebar-close{display:flex}
- body.mobile-menu-open .sidebar .brand{font-size:13px;gap:7px}
- body.mobile-menu-open .sidebar .brand-mark{width:28px;height:28px}
- body.mobile-menu-open .sidebar-bottom{gap:6px}
- body.mobile-menu-open .sidebar-bottom .nav-item{min-height:36px;padding:8px 9px;font-size:13px;border-radius:9px}
+ body.mobile-menu-open .sidebar{inset-block:auto!important;top:25dvh!important;bottom:auto!important;inset-inline-start:8px;width:min(145px,36vw)!important;height:50dvh!important;max-height:50dvh;min-height:0;overflow-y:auto;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:9px 7px 8px;gap:6px;box-shadow:0 12px 30px #0008;backdrop-filter:blur(18px)}
+ body.mobile-menu-open .sidebar-heading{margin-bottom:6px;gap:5px}
+ body.mobile-menu-open .sidebar-close{display:flex;width:27px;height:27px;flex-basis:27px;font-size:17px;border-radius:8px}
+ body.mobile-menu-open .sidebar .brand{font-size:11px;gap:5px}
+ body.mobile-menu-open .sidebar .brand-mark{width:23px;height:23px;font-size:12px}
+ body.mobile-menu-open .sidebar-bottom{gap:5px}
+ body.mobile-menu-open .sidebar-bottom .nav-item{min-height:32px;padding:7px 6px;font-size:11px;border-radius:8px;gap:6px}
+ body.mobile-menu-open .sidebar-bottom .nav-icon{font-size:13px}
 }
