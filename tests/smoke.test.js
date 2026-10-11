@@ -224,8 +224,8 @@ test('saved videos are private to the owner and only approved public videos can 
 test('homepage loads only approved free public videos from Supabase', () => {
   assert.match(app, /id="home-feed"/);
   assert.match(app, /window\.XLiveAuth\?\.renderHomeFeed\(\)/);
-  assert.match(auth, /from\('videos'\)\.select\('id,title,description,storage_path,created_at'\)\.eq\('status','approved'\)\.eq\('is_paid',false\)\.eq\('visibility','public'\)/);
-  assert.match(auth, /function renderHomeFeed\(\)/);
+  assert.match(auth, /from\('videos'\)\.select\('id,title,description,storage_path,created_at',\s*\{count:\s*'exact'\}\)\.eq\('status','approved'\)\.eq\('is_paid',false\)\.eq\('visibility','public'\)/);
+  assert.match(auth, /async function renderHomeFeed\(page = homeFeedPage\)/);
 });
 
 
