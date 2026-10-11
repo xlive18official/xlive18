@@ -114,13 +114,27 @@
     const target = event.target.closest('[data-view]');
     if (!target) return;
     event.preventDefault();
-    render(target.dataset.view);
-    if (target.dataset.view === 'upload') showToast('رفع الفيديو غير متصل بالخادم بعد.');
+    const requestedView = target.dataset.view;
+    if (requestedView !== 'profile' && !window.XLiveAuth?.getUser()) {
+      render('profile');
+      window.XLiveAuth?.render();
+      showToast('أنشئ حساباً أو سجّل الدخول أولاً للوصول إلى الموقع.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    render(requestedView);
+    if (requestedView === 'upload') showToast('رفع الفيديو غير متصل بالخادم بعد.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   searchForm.addEventListener('submit', event => {
     event.preventDefault();
+    if (!window.XLiveAuth?.getUser()) {
+      render('profile');
+      window.XLiveAuth?.render();
+      showToast('سجّل الدخول أولاً لاستخدام البحث.');
+      return;
+    }
     const query = searchInput.value.trim();
     if (!query) {
       showToast('اكتب عبارة للبحث أولاً.');
@@ -131,5 +145,5 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  render('home');
+  render('profile');
 })();
