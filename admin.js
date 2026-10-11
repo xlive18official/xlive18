@@ -10,7 +10,7 @@ async function userNow(){const {data}=await db.auth.getSession();return data?.se
 async function render(){
  const u=await userNow();
  document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view==='admin'));
- if(!u||u.app_metadata?.role!=='admin'){root.innerHTML='<div class="view-header"><h1>الإدارة</h1></div><div class="simple-panel"><h3>غير مصرح</h3><p>هذه الصفحة مخصصة لحساب الإدارة فقط.</p></div>';return}
+ if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){root.innerHTML='<div class="view-header"><h1>الإدارة</h1></div><div class="simple-panel"><h3>غير مصرح</h3><p>هذه الصفحة مخصصة لحساب الإدارة فقط.</p></div>';return}
  root.innerHTML='<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1><p>مراجعة المنشورات وإدارة الحسابات.</p></div><button class="button button-secondary" data-admin-action="refresh">تحديث</button></div><div id="admin-stats" class="admin-stats">جارٍ تحميل الإحصاءات…</div><section class="simple-panel admin-section"><h2>المنشورات بانتظار الموافقة</h2><div id="admin-queue">جارٍ تحميل قائمة المراجعة…</div></section><section class="simple-panel admin-section"><h2>إدارة الحسابات</h2><p>حظر الحسابات أو إلغاء حظرها أو حذف الحساب نهائياً.</p><div id="admin-users">جارٍ تحميل الحسابات…</div></section>';
  const [s,q,us]=await Promise.all([db.rpc('admin_dashboard_stats'),db.rpc('admin_moderation_queue'),db.rpc('admin_list_users')]);
  if(!document.getElementById('admin-stats'))return;
@@ -36,7 +36,7 @@ document.addEventListener('click',async e=>{
  const b=e.target.closest('[data-admin-action]');if(!b)return;
  e.preventDefault();e.stopImmediatePropagation();
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
- const u=await userNow();if(!u||u.app_metadata?.role!=='admin'){alert('غير مصرح');return}
+ const u=await userNow();if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){alert('غير مصرح');return}
  if(act==='approve'||act==='reject'){
   let reason=null;if(act==='reject'){reason=prompt('سبب الرفض (اختياري):');if(reason===null)return}
   const {error}=await db.rpc('admin_review_content',{p_type:b.dataset.kind,p_id:b.dataset.id,p_decision:act,p_reason:reason});
