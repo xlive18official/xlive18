@@ -95,6 +95,7 @@
         target.textContent = 'حفظ التغييرات';
         document.getElementById('profile-display-name')?.focus();
       } else {
+        event.preventDefault();
         form.requestSubmit();
       }
       return;
