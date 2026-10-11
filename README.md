@@ -6,7 +6,7 @@
 
 ## نشر Cloudflare Workers
 
-في إعدادات Builds للمشروع، استخدم أمر البناء `npm run build:cloudflare` وأمر النشر `npx wrangler deploy`. ينشئ أمر البناء مجلد `dist/` بالملفات الثابتة التي يحتاجها النشر.
+أضفنا سير عمل GitHub Actions في `.github/workflows/deploy-cloudflare.yml`: عند الدفع إلى `main` يبني المشروع مجلد `dist/` ثم ينشر Worker باستخدام Wrangler. يتطلب هذا إعداد GitHub Actions secret باسم `CLOUDFLARE_API_TOKEN` يحتوي على Cloudflare API Token بصلاحية تعديل Workers. إذا لم يكن السر موجودًا، سيفشل النشر مع رسالة واضحة. يمكن أيضًا تشغيل سير العمل يدويًا من تبويب Actions.
 
 ## الحالة الحالية
 
