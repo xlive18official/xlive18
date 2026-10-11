@@ -164,7 +164,7 @@ button,a,input,textarea,select{max-width:100%;overflow-wrap:anywhere}
   .search-form{grid-column:1 / -1;grid-row:2;width:100%;max-width:none;height:38px;min-width:0}
   .search-form input{font-size:12px;min-width:0}
   .search-form button{flex:0 0 auto;padding:5px 10px;font-size:11px}
-  .mobile-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:hidden;gap:0}.mobile-nav:has([data-view="editor"]:not([hidden])){grid-template-columns:repeat(7,minmax(0,1fr))}
+  .mobile-nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));overflow:hidden;gap:0}.mobile-nav:has([data-view="editor"]:not([hidden])){grid-template-columns:repeat(8,minmax(0,1fr))}
   .mobile-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:1 1 0;width:100%;min-width:0;padding:6px 1px;white-space:normal;line-height:1.2;text-align:center;font-size:clamp(7px,2.2vw,9px);overflow-wrap:anywhere}
   .mobile-nav button span{font-size:18px;line-height:1.1}
   .content-wrap{padding-top:20px}
