@@ -79,6 +79,12 @@
       return;
     }
 
+    if (view === 'rooms') {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ROOMS</p><h1>الغرف التفاعلية</h1><p>جارٍ تحميل الغرف…</p></div></div><div class="room-grid" aria-live="polite"><div class="empty-panel"><h3>جارٍ تحميل الغرف…</h3></div></div>';
+      window.XLiveAuth?.renderRooms();
+      return;
+    }
+
     const meta = views[view];
     let body = '';
     if (view === 'upload') {
@@ -110,7 +116,6 @@
     if (view === 'notifications') window.XLiveAuth?.renderNotifications();
     if (view === 'clips') window.XLiveAuth?.renderClips();
     if (view === 'upload') window.XLiveAuth?.renderUpload();
-    if (view === 'rooms') window.XLiveAuth?.renderRooms();
     if (view === 'live') window.XLiveAuth?.renderLive();
     if (view === 'settings') window.XLiveAuth?.renderSettings();
     if (view === 'saved') window.XLiveAuth?.renderSaved();
