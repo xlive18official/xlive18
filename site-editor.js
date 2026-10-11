@@ -4,17 +4,32 @@
   let client;
   let design = {};
   const $ = id => document.getElementById(id);
-  function setEditorVisibility(session) {
-    const admin = session?.user?.app_metadata?.role === 'admin';
+  function setEditorVisibility(user) {
+    const admin = user?.app_metadata?.role === 'admin';
     document.querySelectorAll('[data-view="editor"]').forEach(el => el.hidden = !admin);
+  }
+  async function refreshEditorVisibility() {
+    if (!client) return;
+    try {
+      // Fetch the current user from Auth so a role change is not hidden by an older local session object.
+      const { data: { user }, error } = await client.auth.getUser();
+      if (error) throw error;
+      setEditorVisibility(user);
+    } catch (error) {
+      setEditorVisibility(null);
+      console.error('XLIVE18 admin visibility check failed:', error);
+    }
   }
   async function init() {
     if (!window.supabase || !cfg?.url || !cfg?.key) return;
     client = window.supabase.createClient(cfg.url, cfg.key);
     try {
-      const {data:{session}} = await client.auth.getSession();
-      setEditorVisibility(session);
-      client.auth.onAuthStateChange((_event, nextSession) => setEditorVisibility(nextSession));
+      await refreshEditorVisibility();
+      client.auth.onAuthStateChange((_event, nextSession) => {
+        // Update promptly after sign-in/sign-out, then verify the current user with Auth.
+        setEditorVisibility(nextSession?.user || null);
+        Promise.resolve().then(refreshEditorVisibility);
+      });
       // Published design is public; load it for every visitor, not only administrators.
       const {data, error} = await client.from('site_page_designs').select('design').eq('page_key','home').maybeSingle();
       if (error) throw error;
