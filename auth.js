@@ -181,7 +181,7 @@
     try {
       if (mode === 'signup') {
         const displayName = document.getElementById('auth-name').value.trim();
-        const {data,error} = await supabase.auth.signUp({email,password,options:{emailRedirectTo:'https://xlive18.xlive18-official.workers.dev',data:{display_name:displayName,age_confirmed:true}}});
+        const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true}}});
         if (error) throw error;
         if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.render('home'); } else { feedback('تم إنشاء الحساب. افحص بريدك لتأكيده، وبعدها سجّل الدخول للانتقال إلى الصفحة الرئيسية.'); }
       } else {
