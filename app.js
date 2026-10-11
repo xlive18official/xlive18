@@ -7,7 +7,7 @@
 
   const views = {
     home: { title: 'الرئيسية', subtitle: 'نظرة عامة على مساحة XLive 18.' },
-    clips: { title: 'المقاطع والفيديوهات', subtitle: 'رفع الفيديوهات ومشاهدتها بعد اكتمال المراجعة.' },
+    clips: { title: 'المقاطع المميزة', subtitle: 'اكتشف المقاطع العامة المميزة المنشورة على XLIVE18.' },
     rooms: { title: 'الغرف التفاعلية', subtitle: 'الغرف النصية والصوتية والمرئية ستظهر هنا بعد تجهيز الخدمة.' },
     live: { title: 'البث المباشر', subtitle: 'البث الحي يحتاج إلى خدمة بث واتصال فعلية قبل الإطلاق.' },
     messages: { title: 'الرسائل الخاصة', subtitle: 'المحادثات خاصة، ولا تتوفر قبل تفعيل الحسابات وقاعدة البيانات.' },
@@ -21,7 +21,7 @@
   };
 
   const descriptions = {
-    clips: ['مراجعة المحتوى', 'كل فيديو مرفوع سيبقى قيد المراجعة حتى يوافق عليه مشرف مخوّل.'],
+    clips: ['المقاطع العامة', 'تظهر هنا المقاطع المنشورة للعامة بعد اجتياز المراجعة فقط.'],
     rooms: ['نوع الغرف لم يُعتمد بعد', 'قبل بناء الاتصال، سنحدد هل تبدأ المنصة بغرف نصية أم صوتية أم مرئية.'],
     live: ['البث غير متصل بعد', 'لن نعرض فيديو مسجلاً على أنه بث حي. يلزم اختيار مزوّد البث واختباره.'],
     messages: ['الخصوصية أولاً', 'لن تتوفر قراءة أو إرسال الرسائل قبل تطبيق التحقق من الهوية وصلاحيات المحادثات.'],
@@ -78,13 +78,17 @@
       const desc = descriptions[view] || ['الخدمة غير متصلة', 'سيتم تفعيل هذه الميزة بعد تنفيذ الخادم وقاعدة البيانات والتحقق من الصلاحيات.'];
       body = notice(desc[0], desc[1]);
       if (view === 'clips') {
-        body += '<div class="section-grid"><div class="simple-panel"><h3>المقاطع المقبولة</h3><p>ستظهر فقط الفيديوهات التي اجتازت المراجعة وأُتيحت للمستخدم.</p></div><div class="simple-panel"><h3>مقاطعك قيد المراجعة</h3><p>ستتمكن من متابعة حالة الفيديو ومعرفة سبب الرفض عند الحاجة.</p></div></div><div style="margin-top:18px"><button class="button button-primary" data-view="upload">إضافة مقطع <span>←</span></button></div>';
+        body += '<div id="clips-feed" class="clip-grid"><div class="empty-panel"><h3>جارٍ تحميل المقاطع المميزة…</h3><p>لحظات ونجهّز المقاطع العامة المنشورة.</p></div></div>';
       } else if (view === 'purchases') {
         body += '<div class="simple-panel"><h3>مشترياتك</h3><p>ستظهر عمليات الشراء المؤكدة فقط بعد ربط مزوّد الدفع والتحقق من إشعاراته على الخادم.</p></div>';
       }
       body += '<div style="margin-top:18px">' + empty('لا توجد بيانات لعرضها بعد', 'هذا القسم ينتظر ربط الخدمة الحقيقية. ستظهر هنا البيانات الفعلية بعد تنفيذها واختبارها.') + '</div>';
     }
-    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / WORKSPACE</p><h1>' + meta.title + '</h1><p>' + meta.subtitle + '</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>' + body;
+    if (view === 'clips') {
+      root.innerHTML = '<section class="home-page clips-page"><div class="home-page-heading"><div><p class="eyebrow">XLIVE18</p><h1>' + meta.title + '</h1><p>' + meta.subtitle + '</p></div></div>' + body + '<footer class="page-footer"><span>© XLive 18</span><span>الخصوصية أولاً · مراجعة المحتوى · أمان الحساب</span></footer></section>';
+    } else {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / WORKSPACE</p><h1>' + meta.title + '</h1><p>' + meta.subtitle + '</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>' + body;
+    }
     if (view === 'search') window.XLiveAuth?.renderSearch(extra);
     if (view === 'messages') window.XLiveAuth?.renderMessages();
     if (view === 'notifications') window.XLiveAuth?.renderNotifications();
