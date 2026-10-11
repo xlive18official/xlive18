@@ -8,12 +8,12 @@ function sync(){
   const a=document.getElementById('admin-nav');
   const b=document.getElementById('admin-mobile-nav');
   const out=document.getElementById('mobile-signout');
-  if(!db){ if(a){a.hidden=true;a.setAttribute('aria-hidden','true');} return; }
+  if(!db){ if(a){a.hidden=false;a.removeAttribute('aria-hidden');} return; }
   db.auth.getSession().then(({data,error})=>{
     if(error) throw error;
     const u=data?.session?.user||window.XLiveAuth?.getUser?.()||null;
     const admin=!!u&&(u.app_metadata?.role==='admin'||String(u.email||'').toLowerCase()==='xlive18.official@gmail.com');
-    if(a){a.hidden=!admin;a.setAttribute('aria-hidden',String(!admin));a.style.removeProperty('display');}
+    if(a){a.hidden=false;a.removeAttribute('aria-hidden');a.style.removeProperty('display');a.dataset.adminSession=String(admin);}
     if(b)b.hidden=!admin;
     if(out)out.hidden=!u;
     if(u)db.rpc('is_account_banned').then(async result=>{
