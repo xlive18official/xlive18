@@ -1,22 +1,36 @@
 (() => {
 'use strict';
-const cfg=window.XLIVE_SUPABASE;
-if(!cfg||!window.supabase?.createClient)return;
-const db=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-async function sync(){
- const {data}=await db.auth.getSession();const u=data?.session?.user||null;
- const admin=u?.app_metadata?.role==='admin'||u?.email?.toLowerCase()==='xlive18.official@gmail.com';
- const a=document.getElementById('admin-nav'),b=document.getElementById('admin-mobile-nav'),out=document.getElementById('mobile-signout');
- if(a){a.hidden=!admin;a.setAttribute('aria-hidden',String(!admin));}\n if(b)b.hidden=!admin;if(out)out.hidden=!u;
- if(u){const result=await db.rpc('is_account_banned');if(result.data===true){await db.auth.signOut();alert('تم إيقاف هذا الحساب. تواصل مع الإدارة إذا كنت تعتقد أن هذا خطأ.');}}
+function getClient(){
+  try { return window.XLiveAuth?.getClient?.() || null; } catch (_) { return null; }
 }
-
-
-
-db.auth.onAuthStateChange(()=>{setTimeout(()=>sync().catch(()=>{}),0)});
-sync().catch(()=>{});
+function sync(){
+  const db=getClient();
+  const a=document.getElementById('admin-nav');
+  const b=document.getElementById('admin-mobile-nav');
+  const out=document.getElementById('mobile-signout');
+  if(!db){ if(a){a.hidden=true;a.setAttribute('aria-hidden','true');} return; }
+  db.auth.getSession().then(({data,error})=>{
+    if(error) throw error;
+    const u=data?.session?.user||window.XLiveAuth?.getUser?.()||null;
+    const admin=!!u&&(u.app_metadata?.role==='admin'||String(u.email||'').toLowerCase()==='xlive18.official@gmail.com');
+    if(a){a.hidden=!admin;a.setAttribute('aria-hidden',String(!admin));a.style.removeProperty('display');}
+    if(b)b.hidden=!admin;
+    if(out)out.hidden=!u;
+    if(u)db.rpc('is_account_banned').then(async result=>{
+      if(result.data===true){await db.auth.signOut();alert('تم إيقاف هذا الحساب. تواصل مع الإدارة إذا كنت تعتقد أن هذا خطأ.');}
+    }).catch(()=>{});
+  }).catch(()=>{});
+}
+function attach(){
+  const db=getClient();
+  if(!db){setTimeout(attach,250);return;}
+  sync();
+  db.auth.onAuthStateChange(()=>{sync();});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 document.addEventListener('click',async e=>{
- const out=e.target.closest('#mobile-signout');if(!out)return;
- e.preventDefault();e.stopImmediatePropagation();await db.auth.signOut();window.location.reload();
+  const out=e.target.closest('#mobile-signout');if(!out)return;
+  const db=getClient();if(!db)return;
+  e.preventDefault();e.stopImmediatePropagation();await db.auth.signOut();window.location.reload();
 },true);
 })();
