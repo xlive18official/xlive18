@@ -50,8 +50,9 @@
   let creatorTab = 'videos';
   let creatorUploadOpen = false;
   let creatorCameraStream = null;
+  let creatorProfileTarget = null;
 
-  async function renderCreatorProfile(tab = creatorTab) {
+  async function renderCreatorProfile(tab = creatorTab, profileId = null) {
     creatorTab = ['videos','photos','live'].includes(tab) ? tab : 'videos';
     if (!document.querySelector('[data-view].active')?.matches('[data-view="creator"]')) return;
     const supabase = ensureClient();
@@ -60,8 +61,12 @@
       root.innerHTML = '<div class="simple-panel"><h2>الصفحة الشخصية</h2><p>سجّل الدخول لعرض منشوراتك وإنشاء بث.</p><button class="button button-primary" data-view="profile">تسجيل الدخول</button></div>';
       return;
     }
-    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CREATOR</p><h1>الصفحة الشخصية</h1><p>منشوراتك وصورك وإعداد البث المباشر.</p></div></div><div class="creator-profile"><div class="creator-identity" id="creator-identity"><div class="creator-avatar">◎</div><div><h2>جارٍ تحميل الملف…</h2></div></div><div class="creator-tabs" role="tablist" aria-label="محتوى الصفحة الشخصية"><button type="button" data-creator-tab="videos" class="' + (creatorTab === 'videos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'videos') + '"><span>▣</span> المقاطع</button><button type="button" data-creator-tab="photos" class="' + (creatorTab === 'photos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'photos') + '"><span>▧</span> الصور</button><button type="button" data-creator-tab="live" class="' + (creatorTab === 'live' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'live') + '"><span>●</span> إنشاء بث لايف</button></div><div id="creator-tab-content" class="creator-tab-content"><p class="field-help">جارٍ تحميل المحتوى…</p></div></div>';
-    const {data: profile} = await supabase.from('profiles').select('username,display_name,bio,avatar_path').eq('id', user.id).maybeSingle();
+    const viewedUserId = profileId || user.id;
+    const isOwnProfile = viewedUserId === user.id;
+    creatorProfileTarget = viewedUserId;
+    if (!isOwnProfile) creatorTab = 'videos';
+    root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CREATOR</p><h1>الصفحة الشخصية</h1><p>' + (isOwnProfile ? 'منشوراتك وصورك وإعداد البث المباشر.' : 'المقاطع المنشورة في هذا الملف الشخصي.') + '</p></div><button class="back-home" data-view="search">العودة للبحث ←</button></div><div class="creator-profile"><div class="creator-identity" id="creator-identity"><div class="creator-avatar">◎</div><div><h2>جارٍ تحميل الملف…</h2></div></div><div class="creator-tabs" role="tablist" aria-label="محتوى الصفحة الشخصية"><button type="button" data-creator-tab="videos" class="' + (creatorTab === 'videos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'videos') + '"><span>▣</span> المقاطع</button><button type="button" data-creator-tab="photos" style="' + (isOwnProfile ? '' : 'display:none') + '" class="' + (creatorTab === 'photos' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'photos') + '"><span>▧</span> الصور</button><button type="button" data-creator-tab="live" style="' + (isOwnProfile ? '' : 'display:none') + '" class="' + (creatorTab === 'live' ? 'active' : '') + '" role="tab" aria-selected="' + (creatorTab === 'live') + '"><span>●</span> إنشاء بث لايف</button></div><div id="creator-tab-content" class="creator-tab-content"><p class="field-help">جارٍ تحميل المحتوى…</p></div></div>';
+    const {data: profile} = await supabase.from('profiles').select('username,display_name,bio,avatar_path').eq('id', viewedUserId).maybeSingle();
     if (!document.querySelector('[data-view].active')?.matches('[data-view="creator"]') || !user) return;
     const identity = document.getElementById('creator-identity');
     if (identity) {
@@ -75,18 +80,23 @@
     const panel = document.getElementById('creator-tab-content');
     if (!panel) return;
     if (creatorTab === 'videos') {
-      let query = supabase.from('videos').select('id,title,description,storage_path,status,created_at').eq('owner_id', user.id).order('created_at',{ascending:false}).limit(60);
+      let query = supabase.from('videos').select('id,title,description,storage_path,status,visibility,created_at').eq('owner_id', viewedUserId).order('created_at',{ascending:false}).limit(60);
       const {data: rows, error} = await query;
       if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من إعدادات قاعدة البيانات والصلاحيات.</p></div>'; return; }
       const cards = await Promise.all((rows || []).map(async v => {
-        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
-        const media = signed?.signedUrl ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">المعاينة غير متاحة</div>';
-        const status = v.status === 'approved' ? 'منشور' : v.status === 'rejected' ? 'مرفوض' : v.status === 'removed' ? 'محذوف' : 'قيد المراجعة';
-        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
+        const locked = !isOwnProfile && v.visibility === 'private';
+        let media = '<div class="clip-placeholder">المعاينة غير متاحة</div>';
+        if (!locked && (isOwnProfile || (v.status === 'approved' && ['public','profile'].includes(v.visibility)))) {
+          const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
+          media = signed?.signedUrl ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">المعاينة غير متاحة</div>';
+        }
+        if (locked) media = '<div class="private-video-preview" aria-label="مقطع خاص"><span class="private-video-lock">🔒</span><strong>خاص</strong></div>';
+        const status = v.status === 'approved' ? (v.visibility === 'private' ? 'خاص' : v.visibility === 'profile' ? 'الملف الشخصي فقط' : 'منشور') : v.status === 'rejected' ? 'مرفوض' : v.status === 'removed' ? 'محذوف' : 'قيد المراجعة';
+        return '<article class="clip-card ' + (locked ? 'clip-card-private' : '') + '">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div>' + (locked ? '<p>هذا المقطع خاص ولا يمكن تشغيله.</p>' : '<p>' + escapeHtml(v.description || '') + '</p>') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
-      panel.innerHTML = '<div class="creator-panel-heading"><div><h3>مقاطعك</h3><p>تظهر المقاطع العامة بعد الموافقة على المراجعة.</p></div><button class="button button-primary creator-plus" type="button" data-creator-upload="video" aria-label="إضافة مقطع">＋ إضافة مقطع</button></div>' +
-        (creatorUploadOpen ? '<form id="creator-video-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-video-title">عنوان المقطع</label><input id="creator-video-title" maxlength="120" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3"></textarea></div><div class="field"><label for="creator-video-file">ملف الفيديو</label><input id="creator-video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p></div><button class="button button-primary" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
-        (cards.length ? '<div class="creator-media-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>لسه ما نشرت مقاطع</h3><p>اضغط «إضافة مقطع» لرفع أول فيديو. سيبقى قيد المراجعة قبل نشره للعامة.</p></div>');
+      panel.innerHTML = '<div class="creator-panel-heading"><div><h3>' + (isOwnProfile ? 'مقاطعك' : 'المقاطع') + '</h3><p>' + (isOwnProfile ? 'اختر مكان ظهور كل مقطع؛ النشر للعامة يتطلب الموافقة.' : 'المقاطع العامة ومقاطع الملف الشخصي تظهر بعد الموافقة. المقاطع الخاصة تظهر بقفل فقط.') + '</p></div>' + (isOwnProfile ? '<button class="button button-primary creator-plus" type="button" data-creator-upload="video" aria-label="إضافة مقطع">＋ إضافة مقطع</button>' : '') + '</div>' +
+        (isOwnProfile && creatorUploadOpen ? '<form id="creator-video-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-video-title">عنوان المقطع</label><input id="creator-video-title" maxlength="120" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3"></textarea></div><fieldset class="field visibility-options"><legend>مين بيقدر يشوف المقطع؟</legend><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="public" checked><span class="visibility-check" aria-hidden="true"></span><span><strong>المقطع عام</strong><small>بيظهر بالصفحة الرئيسية وبالملف الشخصي بعد الموافقة.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="private"><span class="visibility-check" aria-hidden="true"></span><span><strong>خاص</strong><small>أنت فقط بتقدر تشغّله؛ بيظهر للزوار كعنصر مقفول.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="profile"><span class="visibility-check" aria-hidden="true"></span><span><strong>فقط بالملف الشخصي</strong><small>بيظهر بملفك بعد الموافقة، وما بيظهر بالرئيسية.</small></span></label></fieldset><div class="field"><label for="creator-video-file">ملف الفيديو</label><input id="creator-video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p></div><button class="button button-primary" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
+        (cards.length ? '<div class="creator-media-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>' + (isOwnProfile ? 'لسه ما نشرت مقاطع' : 'ما في مقاطع ظاهرة') + '</h3><p>' + (isOwnProfile ? 'اضغط «إضافة مقطع» لرفع أول فيديو. سيبقى قيد المراجعة قبل نشره.' : 'ما في مقاطع متاحة للعرض في هذا الملف الشخصي حالياً.') + '</p></div>');
     } else if (creatorTab === 'photos') {
       const {data: photos, error} = await supabase.from('photos').select('id,title,description,storage_path,status,created_at').eq('owner_id', user.id).order('created_at',{ascending:false}).limit(100);
       if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل الصور</h3><p>تأكد من تطبيق ترحيل قاعدة البيانات الخاص بالصور.</p></div>'; return; }
@@ -104,7 +114,7 @@
 
   document.addEventListener('click', async event => {
     const tab = event.target.closest('[data-creator-tab]');
-    if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab); return; }
+    if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab, creatorProfileTarget || user?.id); }
     const upload = event.target.closest('[data-creator-upload]');
     if (upload) { event.preventDefault(); creatorUploadOpen = !creatorUploadOpen; await renderCreatorProfile(upload.dataset.creatorUpload === 'photo' ? 'photos' : 'videos'); return; }
     const camera = event.target.closest('[data-creator-camera]');
@@ -235,7 +245,7 @@
       event.preventDefault();
       const supabase = ensureClient(); await syncCurrentUser(supabase);
       if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
-      const title=document.getElementById('creator-video-title')?.value.trim(), description=document.getElementById('creator-video-description')?.value.trim() || '', file=document.getElementById('creator-video-file')?.files?.[0];
+      const title=document.getElementById('creator-video-title')?.value.trim(), description=document.getElementById('creator-video-description')?.value.trim() || '', file=document.getElementById('creator-video-file')?.files?.[0], visibility=document.querySelector('input[name="creator-video-visibility"]:checked')?.value || 'public';
       const allowed={'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
       if (!title || title.length>120 || description.length>2000) { messageSocial('تحقق من العنوان والوصف.'); return; }
       if (!file || !allowed[file.type]) { messageSocial('اختر فيديو MP4 أو WebM أو MOV.'); return; }
@@ -247,7 +257,7 @@
         path=user.id+'/'+id+'.'+allowed[file.type];
         const {error: uploadError}=await supabase.storage.from('video-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
         if (uploadError) throw uploadError;
-        const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,status:'pending',visibility:'public',is_paid:false});
+        const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,status:'pending',visibility,is_paid:false});
         if (rowError) { await supabase.storage.from('video-originals').remove([path]); throw rowError; }
         creatorUploadOpen=false; await renderCreatorProfile('videos'); window.XLiveApp?.showToast('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
       } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الفيديو. تحقق من إعدادات التخزين والصلاحيات وحجم الملف.'; console.error('XLive creator video upload error',error); if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; } }
@@ -453,7 +463,7 @@
         else if (following.has(p.id)) action = '<button class="button button-secondary" data-social-action="unfollow" data-user-id="' + p.id + '">إلغاء المتابعة</button>';
         else if (requested.get(p.id) === 'pending') action = '<span class="field-help">طلب المتابعة قيد الانتظار</span><button class="button button-secondary" data-social-action="cancel-request" data-user-id="' + p.id + '">إلغاء الطلب</button>';
         else action = '<button class="button button-primary" data-social-action="' + (p.is_private ? 'request' : 'follow') + '" data-user-id="' + p.id + '">' + (p.is_private ? 'طلب متابعة' : 'متابعة') + '</button>';
-        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + action + (current && current !== p.id && (following.has(p.id) || followsBack.has(p.id)) ? '<button class="button button-secondary" data-social-action="message" data-user-id="' + p.id + '">رسالة</button>' : '') + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + (current && current !== p.id ? '<button class="button button-secondary" data-social-action="report-profile" data-user-id="' + p.id + '">إبلاغ</button>' : '') + '</div></article>';
+        return '<article class="social-user"><div><strong>' + name + '</strong><p>@' + handle + (p.is_private ? ' · حساب خاص' : ' · حساب عام') + '</p></div><div class="social-actions">' + (current && current !== p.id ? '<button class="button button-secondary" data-social-action="view-profile" data-user-id="' + p.id + '">عرض الملف</button>' : '') + action + (current && current !== p.id && (following.has(p.id) || followsBack.has(p.id)) ? '<button class="button button-secondary" data-social-action="message" data-user-id="' + p.id + '">رسالة</button>' : '') + (current && current !== p.id && !blocked.has(p.id) ? '<button class="button button-danger" data-social-action="block" data-user-id="' + p.id + '">حظر</button>' : '') + (current && current !== p.id ? '<button class="button button-secondary" data-social-action="report-profile" data-user-id="' + p.id + '">إبلاغ</button>' : '') + '</div></article>';
       }).join('');
       panel.insertAdjacentHTML('beforeend', '<p id="social-feedback" class="auth-feedback" role="status" aria-live="polite"></p>');
     } catch (error) {
@@ -755,6 +765,7 @@
     const supabase = ensureClient();
     if (!supabase || !user) { messageSocial('سجّل الدخول أولاً لتنفيذ هذا الإجراء.'); return; }
     try {
+      if (action === 'view-profile') { window.XLiveApp?.render('creator', targetId); return; }
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
       if (action === 'save-video') result = await supabase.from('saved_videos').insert({user_id:user.id,video_id:targetId});
