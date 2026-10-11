@@ -5,7 +5,8 @@
   "description": "XLive 18 Arabic RTL social platform foundation",
   "scripts": {
     "check:js": "node --check app.js && node --check auth.js && node --check supabase-config.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "build:cloudflare": "node scripts/prepare-cloudflare.mjs"
   },
   "engines": {
     "node": ">=20"
