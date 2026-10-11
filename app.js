@@ -58,6 +58,13 @@
       if (el.closest('.mobile-nav')) el.setAttribute('aria-current', active ? 'page' : 'false');
     });
 
+    // Render notifications directly to avoid flashing the obsolete placeholder page.
+    if (view === 'notifications' && window.XLiveAuth?.renderNotifications) {
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACTIVITY</p><h1>الإشعارات</h1><p>جارٍ تحميل الإشعارات…</p></div><button class="back-home" data-view="home">العودة للرئيسية ←</button></div>';
+      window.XLiveAuth.renderNotifications();
+      return;
+    }
+
     if (view === 'home') {
       root.innerHTML = homeMarkup();
       window.XLiveSiteEditor?.apply();
