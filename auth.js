@@ -183,7 +183,7 @@
         const displayName = document.getElementById('auth-name').value.trim();
         const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true}}});
         if (error) throw error;
-        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.render('home'); } else { feedback('تم إنشاء الحساب. افحص بريدك لتأكيده، وبعدها سجّل الدخول للانتقال إلى الصفحة الرئيسية.'); }
+        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.render('home'); } else { feedback('تم إنشاء الحساب، لكن لم تبدأ جلسة الدخول تلقائياً. تأكد من تعطيل تأكيد البريد في إعدادات Supabase ثم حاول مجدداً.'); }
       } else {
         const {error} = await supabase.auth.signInWithPassword({email,password});
         if (error) throw error;
