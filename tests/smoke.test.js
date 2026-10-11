@@ -9,6 +9,15 @@ const schema = readFileSync('supabase/migrations/0001_initial_schema.sql', 'utf8
 const storage = readFileSync('supabase/migrations/0002_private_video_storage.sql', 'utf8');
 const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
 
+
+test('Cloudflare build includes every browser script referenced by index.html', () => {
+  const build = readFileSync('scripts/prepare-cloudflare.mjs', 'utf8');
+  for (const script of ['app.js', 'auth.js', 'site-editor.js', 'supabase-config.js']) {
+    assert.match(html, new RegExp('src="\\.\\/' + script.replace('.', '\\\\.') + '"'));
+    assert.match(build, new RegExp('"' + script.replace('.', '\\\\.') + '"'));
+  }
+});
+
 test('document is Arabic RTL and links the local app assets', () => {
   assert.match(html, /<html lang="ar" dir="rtl">/);
   assert.match(html, /href="\.\/styles\.css"/);
