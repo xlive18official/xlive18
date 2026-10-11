@@ -52,6 +52,43 @@
   let creatorCameraStream = null;
   let creatorProfileTarget = null;
 
+  function captureVideoPreview(file) {
+    return new Promise(resolve => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const url = URL.createObjectURL(file);
+      let finished = false;
+      const finish = blob => {
+        if (finished) return;
+        finished = true;
+        URL.revokeObjectURL(url);
+        video.removeAttribute('src');
+        video.load();
+        resolve(blob || null);
+      };
+      const draw = () => {
+        try {
+          const scale = Math.min(1, 640 / (video.videoWidth || 640));
+          canvas.width = Math.max(1, Math.round((video.videoWidth || 640) * scale));
+          canvas.height = Math.max(1, Math.round((video.videoHeight || 360) * scale));
+          canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => finish(blob), 'image/jpeg', 0.78);
+        } catch (_) { finish(null); }
+      };
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      video.onloadeddata = () => {
+        try { if (Number.isFinite(video.duration) && video.duration > 1) video.currentTime = Math.min(1, video.duration / 2); else draw(); }
+        catch (_) { draw(); }
+      };
+      video.onseeked = draw;
+      video.onerror = () => finish(null);
+      video.src = url;
+      video.load();
+    });
+  }
+
   async function renderCreatorProfile(tab = creatorTab, profileId = null) {
     creatorTab = ['videos','photos','live'].includes(tab) ? tab : 'videos';
     if (!document.querySelector('[data-view].active')?.matches('[data-view="creator"]')) return;
@@ -80,7 +117,7 @@
     const panel = document.getElementById('creator-tab-content');
     if (!panel) return;
     if (creatorTab === 'videos') {
-      let query = supabase.from('videos').select('id,title,description,storage_path,status,visibility,created_at').eq('owner_id', viewedUserId).order('created_at',{ascending:false}).limit(60);
+      let query = supabase.from('videos').select('id,title,description,storage_path,preview_path,status,visibility,created_at').eq('owner_id', viewedUserId).order('created_at',{ascending:false}).limit(60);
       const {data: rows, error} = await query;
       if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من إعدادات قاعدة البيانات والصلاحيات.</p></div>'; return; }
       const cards = await Promise.all((rows || []).map(async v => {
@@ -90,7 +127,14 @@
           const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
           media = signed?.signedUrl ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '"></video>' : '<div class="clip-placeholder">المعاينة غير متاحة</div>';
         }
-        if (locked) media = '<div class="private-video-preview" aria-label="مقطع خاص"><span class="private-video-lock">🔒</span><strong>خاص</strong></div>';
+        if (locked) {
+          let previewMarkup = '';
+          if (v.preview_path) {
+            const {data: preview} = await supabase.storage.from('video-originals').createSignedUrl(v.preview_path, 3600);
+            if (preview?.signedUrl) previewMarkup = '<img class="private-video-thumb" src="' + escapeHtml(preview.signedUrl) + '" alt="" loading="lazy">';
+          }
+          media = '<div class="private-video-preview" aria-label="مقطع خاص">' + previewMarkup + '<span class="private-video-lock">🔒</span><strong>خاص</strong></div>';
+        }
         const status = v.status === 'approved' ? (v.visibility === 'private' ? 'خاص' : v.visibility === 'profile' ? 'الملف الشخصي فقط' : 'منشور') : v.status === 'rejected' ? 'مرفوض' : v.status === 'removed' ? 'محذوف' : 'قيد المراجعة';
         return '<article class="clip-card ' + (locked ? 'clip-card-private' : '') + '">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div>' + (locked ? '<p>هذا المقطع خاص ولا يمكن تشغيله.</p>' : '<p>' + escapeHtml(v.description || '') + '</p>') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
@@ -257,8 +301,22 @@
         path=user.id+'/'+id+'.'+allowed[file.type];
         const {error: uploadError}=await supabase.storage.from('video-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
         if (uploadError) throw uploadError;
-        const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,status:'pending',visibility,is_paid:false});
-        if (rowError) { await supabase.storage.from('video-originals').remove([path]); throw rowError; }
+        let previewPath = null;
+        try {
+          const previewBlob = await captureVideoPreview(file);
+          if (previewBlob) {
+            const candidate = user.id + '/previews/' + id + '.jpg';
+            const {error: previewError} = await supabase.storage.from('video-originals').upload(candidate, previewBlob, {contentType:'image/jpeg',upsert:false,cacheControl:'3600'});
+            if (!previewError) previewPath = candidate;
+            else console.warn('XLive video preview upload skipped', previewError);
+          }
+        } catch (previewError) { console.warn('XLive video preview generation skipped', previewError); }
+        const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,preview_path:previewPath,status:'pending',visibility,is_paid:false});
+        if (rowError) {
+          await supabase.storage.from('video-originals').remove([path]);
+          if (previewPath) await supabase.storage.from('video-originals').remove([previewPath]);
+          throw rowError;
+        }
         creatorUploadOpen=false; await renderCreatorProfile('videos'); window.XLiveApp?.showToast('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
       } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الفيديو. تحقق من إعدادات التخزين والصلاحيات وحجم الملف.'; console.error('XLive creator video upload error',error); if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; } }
       return;
