@@ -61,7 +61,8 @@
 
     if (view === 'creator') {
       root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / CREATOR</p><h1>الصفحة الشخصية</h1><p>جارٍ تحميل منشوراتك…</p></div></div><div class="simple-panel"><p>جارٍ تجهيز الصفحة الشخصية…</p></div>';
-      window.XLiveAuth?.renderCreatorProfile('videos', extra || null);
+      if (extra) window.XLiveAuth?.renderCreatorProfile('videos', extra);
+      else window.XLiveAuth?.renderCreatorProfile();
       return;
     }
 
