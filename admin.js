@@ -2,12 +2,13 @@
 'use strict';
 const config=window.XLIVE_SUPABASE;
 const root=document.getElementById('app-view');
-if(!config||!window.supabase?.createClient||!root)return;
-const db=window.XLiveAuth?.getClient?.() || window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const db=config&&window.supabase?.createClient?(window.XLiveAuth?.getClient?.() || window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})):null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=v=>v?new Date(v).toLocaleDateString('ar'): '—';
-async function userNow(){const {data}=await db.auth.getSession();return data?.session?.user||null}
+async function userNow(){if(!db)return null;const {data}=await db.auth.getSession();return data?.session?.user||null}
 async function render(){
+ if(!root){alert('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}
+ if(!db){root.innerHTML='<div class="view-header"><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر تهيئة خدمة الإدارة</h3><p>إعدادات Supabase أو مكتبة الاتصال غير متاحة. أعد تحميل الصفحة، وإذا استمرت المشكلة أرسل هذه الرسالة للدعم.</p><p>config: '+Boolean(config)+' · supabase: '+Boolean(window.supabase?.createClient)+'</p></div>';return}
  const u=await userNow();
  document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view==='admin'));
  if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){root.innerHTML='<div class="view-header"><h1>الإدارة</h1></div><div class="simple-panel"><h3>غير مصرح</h3><p>هذه الصفحة مخصصة لحساب الإدارة فقط.</p></div>';return}
