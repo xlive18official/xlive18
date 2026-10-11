@@ -11,12 +11,14 @@
   <script src="./supabase-config.js"></script>
   <script src="./app.js" defer></script>
   <script src="./auth.js" defer></script>
+  <script src="./site-editor.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" aria-label="التنقل الرئيسي">
       <a class="brand" href="#home" data-view="home" aria-label="XLive 18 الرئيسية"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a>
       <p class="sidebar-label">القائمة الرئيسية</p>
+      <button class="nav-item" data-view="editor" hidden><span class="nav-icon">✎</span>تعديل الموقع</button>
       <nav class="nav-list">
         <button class="nav-item active" data-view="home"><span class="nav-icon">⌂</span>الرئيسية</button>
         <button class="nav-item" data-view="clips"><span class="nav-icon">▷</span>المقاطع</button>
