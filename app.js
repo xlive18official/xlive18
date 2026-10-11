@@ -151,5 +151,6 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  window.XLiveApp = { render, showToast };
   render('profile');
 })();
