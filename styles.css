@@ -456,3 +456,10 @@ img, video, iframe, canvas, svg {
   body.mobile-menu-open .sidebar .sidebar-note{margin-bottom:6px}
   body.mobile-menu-open .main-content{position:relative}\n  body.mobile-menu-open .topbar{z-index:26}
 }
+
+
+/* The sidebar is for account actions only; navigation lives in the mobile bar / app views. */
+.sidebar-label,.sidebar-note,.sidebar>.nav-item[data-view="editor"],.sidebar .nav-list{display:none!important}
+.sidebar{justify-content:flex-start}
+.sidebar-bottom{margin-top:auto;display:grid;gap:8px}
+.sidebar-bottom .nav-item{justify-content:flex-start}
