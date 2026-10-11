@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const cfg=window.XLIVE_SUPABASE;
-if(!cfg||!window.supabase?.createClient){\n document.addEventListener('DOMContentLoaded',()=>{const a=document.getElementById('admin-nav');if(a&&location.search.includes('admin-preview=1'))a.hidden=false;});\n return;\n}
+if(!cfg||!window.supabase?.createClient)return;
 const db=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 async function sync(){
  const {data}=await db.auth.getSession();const u=data?.session?.user||null;
