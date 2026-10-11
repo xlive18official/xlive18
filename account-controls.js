@@ -1,5 +1,10 @@
 (() => {
 'use strict';
+const menuButton=document.getElementById('mobile-menu-toggle');
+function closeMenu(){document.body.classList.remove('mobile-menu-open');if(menuButton){menuButton.setAttribute('aria-expanded','false');menuButton.setAttribute('aria-label','فتح القائمة الجانبية');menuButton.textContent='☰';}}
+if(menuButton)menuButton.addEventListener('click',()=>{const open=!document.body.classList.contains('mobile-menu-open');document.body.classList.toggle('mobile-menu-open',open);menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'إغلاق القائمة الجانبية':'فتح القائمة الجانبية');menuButton.textContent=open?'×':'☰';});
+document.addEventListener('click',e=>{if(e.target.closest('.sidebar [data-view]'))closeMenu();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
 const cfg=window.XLIVE_SUPABASE;
 if(!cfg||!window.supabase?.createClient)return;
 const db=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
@@ -11,11 +16,7 @@ async function sync(){
  if(u){const result=await db.rpc('is_account_banned');if(result.data===true){await db.auth.signOut();alert('تم إيقاف هذا الحساب. تواصل مع الإدارة إذا كنت تعتقد أن هذا خطأ.');}}
 }
 
-const menuButton=document.getElementById('mobile-menu-toggle');
-function closeMenu(){document.body.classList.remove('mobile-menu-open');if(menuButton){menuButton.setAttribute('aria-expanded','false');menuButton.setAttribute('aria-label','فتح القائمة الجانبية');menuButton.textContent='☰';}}
-if(menuButton)menuButton.addEventListener('click',()=>{const open=document.body.classList.toggle('mobile-menu-open');menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'إغلاق القائمة الجانبية':'فتح القائمة الجانبية');menuButton.textContent=open?'×':'☰';});
-document.addEventListener('click',e=>{if(e.target.closest('.sidebar [data-view]'))closeMenu();if(e.target===document.querySelector('body.mobile-menu-open::before'))closeMenu();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
+
 
 db.auth.onAuthStateChange(()=>{setTimeout(()=>sync().catch(()=>{}),0)});
 sync().catch(()=>{});
