@@ -279,3 +279,7 @@ body.auth-only .page-footer { display: none; }
 .site-editor input[type=color]{width:70px;height:42px;border:1px solid var(--line);border-radius:9px;background:#101013;padding:3px}
 #ed-status{color:#8de0b2;font-size:12px;overflow-wrap:anywhere}
 [data-view="editor"][hidden]{display:none!important}
+
+
+/* Ensure the HTML hidden attribute wins over component display rules. */
+[hidden] { display: none !important; }
