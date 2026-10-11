@@ -255,7 +255,7 @@ const config = readFileSync('supabase-config.js', 'utf8');
 test('Supabase client and auth module load before account interaction', () => {
   assert.match(html, /cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/);
   assert.match(html, /src="\.\/supabase-config\.js(?:\?[^"]*)?"/);
-  assert.match(html, /src="\.\/auth\.js" defer/);
+  assert.match(html, /src="\.\/auth\.js(?:\?[^"]*)?" defer/);
   assert.match(config, /https:\/\/eesyjavwmuopobmgcucb\.supabase\.co/);
   assert.match(config, /sb_publishable_/);
   assert.doesNotMatch(config, /service_role\s*[:=]\s*['"]|sb_secret_/i);
