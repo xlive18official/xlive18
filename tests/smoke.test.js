@@ -319,3 +319,9 @@ test('application starts on the homepage instead of briefly showing the profile 
   assert.match(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('home'\);\s*\}\)\(\);/);
   assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('profile'\);/);
 });
+
+
+test('profile view renders a stable shell before async auth profile data', () => {
+  assert.match(app, /if \(view === 'profile'\) \{[\s\S]*?جارٍ تحميل بيانات الحساب[\s\S]*?XLiveAuth\?\.render\(\);\s*return;/);
+  assert.match(auth, /async function renderProfile\(\)/);
+});
