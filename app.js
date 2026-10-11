@@ -99,7 +99,7 @@
   }
 
   function homeMarkup() {
-    return '<div class="hero"><div class="hero-copy"><span class="eyebrow"><span class="status-dot"></span> مساحة اجتماعية للبالغين</span><h1>عالمك. <span>مساحتك.</span> تواصلك.</h1><p>منصة واحدة للمقاطع والتواصل والغرف والبث المباشر — تُبنى خطوة بخطوة مع مراعاة الخصوصية والأمان.</p><div class="hero-actions"><button class="button button-primary" data-view="clips">استكشف المقاطع <span>←</span></button><button class="button button-secondary" data-view="profile">إعداد الملف الشخصي</button></div></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-x">X<span>18</span></div><div class="art-caption">YOUR SPACE. YOUR LIVE.</div></div></div><div class="section-heading"><div><p class="eyebrow">اكتشف المنصة</p><h2>كل ما يهمك، في مكان واحد</h2></div><span class="muted">يتم تفعيل الأقسام عند ربط الخدمات</span></div><div class="feature-grid"><button class="feature-card" data-view="clips"><span class="feature-icon red">▷</span><span class="feature-title">المقاطع</span><span class="feature-desc">مشاهدة ونشر الفيديوهات بعد المراجعة.</span><span class="feature-link">استكشف <b>←</b></span></button><button class="feature-card" data-view="rooms"><span class="feature-icon">◉</span><span class="feature-title">الغرف التفاعلية</span><span class="feature-desc">مساحات للتواصل مع أعضاء المنصة.</span><span class="feature-link">عرض الغرف <b>←</b></span></button><button class="feature-card" data-view="live"><span class="feature-icon red">●</span><span class="feature-title">البث المباشر</span><span class="feature-desc">بث ومشاهدة مباشرة بعد تجهيز الاتصال.</span><span class="feature-link">عرض البثوث <b>←</b></span></button><button class="feature-card" data-view="messages"><span class="feature-icon">✉</span><span class="feature-title">الرسائل الخاصة</span><span class="feature-desc">محادثات خاصة مع ضوابط الخصوصية.</span><span class="feature-link">الرسائل <b>←</b></span></button></div><div class="home-status-strip"><span><i class="status-dot"></i> حسابات وتسجيل دخول</span><span><i class="status-dot"></i> مقاطع بعد المراجعة</span><span><i class="status-dot status-dot-muted"></i> البث المباشر قيد التجهيز</span></div><div class="section-heading section-heading-lower"><div><p class="eyebrow">اكتشف وشاهد</p><h2>أحدث المقاطع</h2><p class="section-subtitle">فيديوهات عامة وافق عليها فريق المراجعة فقط.</p></div><button class="text-button" data-view="clips">كل المقاطع ←</button></div><div class="home-feed-wrap"><div class="feed-toolbar"><span class="feed-toolbar-title">من مجتمع XLIVE18</span><span class="feed-toolbar-note">المحتوى الحقيقي فقط · بدون بيانات وهمية</span></div><div class="empty-panel" id="home-feed"><div class="empty-symbol">▷</div><h3>جارٍ تحميل المقاطع</h3><p>رح تظهر هون المقاطع المنشورة والمقبولة. إذا ما في محتوى، رح نوضح ذلك بدل ما نعرض أمثلة وهمية.</p><span class="status-pill"><span class="status-dot"></span> جاري التحقق من المحتوى</span></div></div><footer class="page-footer"><span>© XLive 18</span><span>الخصوصية أولاً · مراجعة المحتوى · أمان الحساب</span></footer>';
+    return '<section class="home-page"><div class="home-page-heading"><div><p class="eyebrow">XLIVE18</p><h1>المقاطع العامة</h1><p>اكتشف أحدث المقاطع المنشورة للعامة.</p></div><button class="home-search-shortcut" type="button" data-focus-search aria-label="البحث"><span aria-hidden="true">⌕</span></button></div><div class="home-feed-wrap"><div id="home-feed" class="home-feed-grid" aria-live="polite"><div class="empty-panel"><div class="empty-symbol">▷</div><h3>جارٍ تحميل المقاطع</h3><p>ستظهر هنا المقاطع العامة المقبولة بعد المراجعة.</p></div></div><nav id="home-pagination" class="home-pagination" aria-label="صفحات المقاطع"></nav></div><footer class="page-footer"><span>© XLive 18</span><span>الخصوصية أولاً · مراجعة المحتوى · أمان الحساب</span></footer></section>';
   }
 
   function escapeHtml(value) {
@@ -125,6 +125,12 @@
     render(requestedView);
     if (requestedView === 'upload') showToast('رفع الفيديو غير متصل بالخادم بعد.');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+
+  document.addEventListener('click', event => {
+    const searchShortcut = event.target.closest('[data-focus-search]');
+    if (searchShortcut) { event.preventDefault(); searchInput?.focus(); }
   });
 
   searchForm.addEventListener('submit', event => {
