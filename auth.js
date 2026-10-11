@@ -886,6 +886,6 @@
   });
 
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, renderCreatorProfile, getUser: () => user, cleanup: () => { subscription?.unsubscribe(); if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop()); } };
+  window.XLiveAuth = { getClient: () => client, render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, renderCreatorProfile, getUser: () => user, cleanup: () => { subscription?.unsubscribe(); if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop()); } };
   if (document.getElementById('home-feed')) renderHomeFeed();
 })();
