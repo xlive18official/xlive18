@@ -227,7 +227,7 @@
         if (uploadError) throw uploadError;
         const {error: rowError} = await supabase.from('photos').insert({owner_id:user.id,title:document.getElementById('creator-photo-title')?.value.trim() || '',description:document.getElementById('creator-photo-description')?.value.trim() || '',storage_path:path,status:'pending',visibility:'public'});
         if (rowError) { await supabase.storage.from('photo-originals').remove([path]); throw rowError; }
-        creatorUploadOpen = false; await renderCreatorProfile('photos'); messageSocial('تم رفع الصورة وإرسالها للمراجعة. لن تُنشر للعامة قبل الموافقة.');
+        creatorUploadOpen = false; await renderCreatorProfile('photos'); window.XLiveApp?.showToast('تم رفع الصورة وإرسالها للمراجعة. لن تُنشر للعامة قبل الموافقة.');
       } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الصورة. تأكد من تطبيق ترحيل الصور والصلاحيات ثم حاول مجدداً.'; console.error('XLive photo upload error',error); if (document.getElementById('creator-photo-submit')) { button.disabled=false; button.textContent='رفع الصورة وإرسالها للمراجعة'; } }
       return;
     }
@@ -249,7 +249,7 @@
         if (uploadError) throw uploadError;
         const {error: rowError}=await supabase.from('videos').insert({owner_id:user.id,title,description,storage_path:path,status:'pending',visibility:'public',is_paid:false});
         if (rowError) { await supabase.storage.from('video-originals').remove([path]); throw rowError; }
-        creatorUploadOpen=false; await renderCreatorProfile('videos'); messageSocial('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
+        creatorUploadOpen=false; await renderCreatorProfile('videos'); window.XLiveApp?.showToast('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
       } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الفيديو. تحقق من إعدادات التخزين والصلاحيات وحجم الملف.'; console.error('XLive creator video upload error',error); if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; } }
       return;
     }
