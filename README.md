@@ -4,6 +4,10 @@
 
 [حالة CI](https://github.com/xlive18official/xlive18/actions/workflows/ci.yml)
 
+## نشر Cloudflare Workers
+
+في إعدادات Builds للمشروع، استخدم أمر البناء `npm run build:cloudflare` وأمر النشر `npx wrangler deploy`. ينشئ أمر البناء مجلد `dist/` بالملفات الثابتة التي يحتاجها النشر.
+
 ## الحالة الحالية
 
 المشروع يتضمن واجهة مرتبطة بقاعدة بيانات Supabase فعلية، وتاريخ ترحيلات SQL مطبّق على المشروع المرتبط حتى `0024_index_saved_video_foreign_key.sql`.
