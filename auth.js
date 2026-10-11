@@ -47,6 +47,7 @@
   }
 
   async function renderProfile() {
+    // Auth session callbacks may finish while the user is on another page; never let them replace the homepage.
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
     if (user) {
       document.body.classList.remove('auth-only');
