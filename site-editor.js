@@ -1,11 +1,17 @@
 (() => {
   'use strict';
   const cfg = window.XLIVE_SUPABASE;
+  // This ID is used only to keep the admin control visible if a browser has a stale role claim.
+  // Supabase RLS remains the authority for saving changes.
+  const ADMIN_USER_ID = '31cc6621-d931-457a-8c58-e0dac0e1dc3d';
   let client;
   let design = {};
   const $ = id => document.getElementById(id);
+  function isAdmin(user) {
+    return user?.app_metadata?.role === 'admin' || user?.id === ADMIN_USER_ID;
+  }
   function setEditorVisibility(user) {
-    const admin = user?.app_metadata?.role === 'admin';
+    const admin = isAdmin(user);
     document.querySelectorAll('[data-view="editor"]').forEach(el => el.hidden = !admin);
   }
   async function refreshEditorVisibility() {
@@ -49,7 +55,24 @@
     if (design.logo) document.querySelectorAll('.brand-mark').forEach(el => {el.textContent='';el.style.backgroundImage='url("' + design.logo.replace(/["\\\\]/g,'') + '")';el.style.backgroundSize='contain';el.style.backgroundPosition='center';el.style.backgroundRepeat='no-repeat';});
     if (design.accent) document.documentElement.style.setProperty('--red',design.accent);
   }
-  function renderEditor() {
+  async function renderEditor() {
+    if (!client) return;
+    let currentUser = null;
+    try {
+      const { data: { user }, error } = await client.auth.getUser();
+      if (error) throw error;
+      currentUser = user;
+    } catch (error) {
+      console.error('XLIVE18 editor authorization check failed:', error);
+      window.XLiveApp?.showToast('تعذر التحقق من صلاحية الحساب. حدّث الصفحة وحاول مجددًا.');
+      return;
+    }
+    if (!isAdmin(currentUser)) {
+      setEditorVisibility(currentUser);
+      window.XLiveApp?.showToast('محرّر الموقع مخصص لحساب المدير.');
+      return;
+    }
+    setEditorVisibility(currentUser);
     const root=$('app-view');
     root.innerHTML='<section class="home-page site-editor"><div class="view-header"><div><p class="eyebrow">XLIVE18 / VISUAL EDITOR</p><h1>محرّر تصميم الموقع</h1><p>عدّل مظهر الصفحة الرئيسية، ثم احفظ وانشر.</p></div><button class="back-home" data-view="home">معاينة الرئيسية</button></div><div class="simple-panel form-stack"><label class="field">عنوان الواجهة الرئيسية<input id="ed-title" maxlength="140"></label><label class="field">النص التعريفي<textarea id="ed-text" maxlength="600" rows="3"></textarea></label><label class="field">لون الهوية<input id="ed-color" type="color"></label><label class="field">صورة خلفية الصفحة الرئيسية<input id="ed-bg" type="file" accept="image/png,image/jpeg,image/webp"></label><label class="field">شعار الموقع<input id="ed-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label><p class="field-help">الصور تُرفع إلى التخزين السحابي، والحد الأقصى لكل صورة 8 ميغابايت.</p><div class="hero-actions"><button class="button button-secondary" id="ed-preview">معاينة</button><button class="button button-primary" id="ed-save">حفظ ونشر</button></div><p id="ed-status" role="status"></p></div></section>';
     $('ed-title').value=design.heroTitle||'عالمك. مساحتك. تواصلك.';
@@ -68,6 +91,10 @@
     $('ed-save').onclick=async()=>{const btn=$('ed-save');btn.disabled=true;status.textContent='جارٍ حفظ التغييرات…';try{design={...design,heroTitle:$('ed-title').value,heroText:$('ed-text').value,accent:$('ed-color').value};design.background=await upload($('ed-bg'))||design.background;design.logo=await upload($('ed-logo'))||design.logo;const {data:{user}}=await client.auth.getUser();const {error}=await client.from('site_page_designs').upsert({page_key:'home',design,updated_by:user.id},{onConflict:'page_key'});if(error)throw error;apply();status.textContent='تم حفظ ونشر التصميم بنجاح.';}catch(e){status.textContent='تعذر الحفظ: '+(e.message||'تحقق من صلاحية المدير وإعدادات التخزين.');}finally{btn.disabled=false;}};
   }
   document.addEventListener('click',e=>{if(e.target.closest('[data-view="editor"]')){e.preventDefault();if(!client)return;renderEditor();}});
+  window.addEventListener('focus', () => { refreshEditorVisibility(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshEditorVisibility();
+  });
   window.XLiveSiteEditor={init,apply,renderEditor};
   init();
 })();
