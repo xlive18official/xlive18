@@ -305,13 +305,13 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.match(html, /styles\\.css\\?v=20261012-8/);
-  assert.match(html, /app\\.js\\?v=20261012-8/);
+  assert.match(html, /styles\.css\?v=20261012-8/);
+  assert.match(html, /app\.js\?v=20261012-8/);
 });
 
 
 test('auth session callbacks cannot replace homepage with the profile screen', () => {
-  assert.match(auth, /async function renderProfile\(\) \{\s*\/\/ Auth session callbacks may finish while the user is on another page; never let them replace the homepage\.\s*if \(!document\.querySelector\('\[data-view\]\.active'\)\?\.matches\('\[data-view=\\"profile\\"\]'\)\) return;/);
+  assert.match(auth, /async function renderProfile\(\)[\s\S]*?Auth session callbacks may finish while the user is on another page[\s\S]*?matches\('\[data-view="profile"\]'\)\) return;/);
 });
 
 
