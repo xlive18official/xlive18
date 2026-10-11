@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#0b0b0d">
   <meta name="description" content="XLive 18 — منصة اجتماعية وترفيهية للبالغين.">
   <title>XLive 18 — منصتك الاجتماعية</title>
-  <link rel="stylesheet" href="./styles.css?v=20261012-1">
+  <link rel="stylesheet" href="./styles.css?v=20261012-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20261012-1"></script>
-  <script src="./app.js?v=20261012-1" defer></script>
-  <script src="./auth.js?v=20261012-1" defer></script>
-  <script src="./site-editor.js?v=20261012-1" defer></script>
+  <script src="./supabase-config.js?v=20261012-2"></script>
+  <script src="./app.js?v=20261012-2" defer></script>
+  <script src="./auth.js?v=20261012-2" defer></script>
+  <script src="./site-editor.js?v=20261012-2" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -50,26 +50,10 @@
       </header>
 
       <section class="content-wrap" id="app-view" aria-live="polite">
-        <div class="hero">
-          <div class="hero-copy">
-            <span class="eyebrow"><span class="status-dot"></span> مساحة اجتماعية للبالغين</span>
-            <h1>عالمك. <span>مساحتك.</span> تواصلك.</h1>
-            <p>منصة واحدة للمقاطع والتواصل والغرف والبث المباشر — تُبنى خطوة بخطوة مع مراعاة الخصوصية والأمان.</p>
-          </div>
-          <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-x">X<span>18</span></div><div class="art-caption">YOUR SPACE. YOUR LIVE.</div></div>
+        <div class="initial-loading" role="status" aria-live="polite">
+          <span class="brand-mark">X</span>
+          <p>جارٍ تجهيز XLIVE 18…</p>
         </div>
-
-        <div class="section-heading"><div><p class="eyebrow">اكتشف المنصة</p><h2>كل ما يهمك، في مكان واحد</h2></div><span class="muted">يتم تفعيل الأقسام عند ربط الخدمات</span></div>
-        <div class="feature-grid">
-          <button class="feature-card" data-view="clips"><span class="feature-icon red">▷</span><span class="feature-title">المقاطع</span><span class="feature-desc">مشاهدة ونشر الفيديوهات بعد المراجعة.</span><span class="feature-link">استكشف <b>←</b></span></button>
-          <button class="feature-card" data-view="rooms"><span class="feature-icon">◉</span><span class="feature-title">الغرف التفاعلية</span><span class="feature-desc">مساحات للتواصل مع أعضاء المنصة.</span><span class="feature-link">عرض الغرف <b>←</b></span></button>
-          <button class="feature-card" data-view="live"><span class="feature-icon red">●</span><span class="feature-title">البث المباشر</span><span class="feature-desc">بث ومشاهدة مباشرة بعد تجهيز الاتصال.</span><span class="feature-link">عرض البثوث <b>←</b></span></button>
-          <button class="feature-card" data-view="messages"><span class="feature-icon">✉</span><span class="feature-title">الرسائل الخاصة</span><span class="feature-desc">محادثات خاصة مع ضوابط الخصوصية.</span><span class="feature-link">الرسائل <b>←</b></span></button>
-        </div>
-
-        <div class="section-heading section-heading-lower"><div><p class="eyebrow">آخر المستجدات</p><h2>محتوى المنصة</h2></div><button class="text-button" data-view="clips">عرض المقاطع ←</button></div>
-        <div class="empty-panel"><div class="empty-symbol">✦</div><h3>ستبدأ القصص هنا</h3><p>لا يوجد محتوى منشور من قاعدة بيانات حتى الآن. لن نعرض بيانات تجريبية على أنها محتوى حقيقي.</p><span class="status-pill"><span class="status-dot"></span> بانتظار ربط الخادم وقاعدة البيانات</span></div>
-        <footer class="page-footer"><span>© XLive 18</span><span>الخصوصية أولاً · مراجعة المحتوى · أمان الحساب</span></footer>
       </section>
     </main>
   </div>
