@@ -41,6 +41,7 @@
 
   function renderPasswordRecovery() {
     passwordRecoveryActive = true;
+    document.body.classList.add('auth-only');
     document.querySelectorAll('[data-view]').forEach(el => el.classList.toggle('active', el.dataset.view === 'profile'));
     root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ACCOUNT SECURITY</p><h1>تعيين كلمة مرور جديدة</h1><p>اختر كلمة مرور جديدة لحسابك.</p></div></div><form id="password-update-form" class="simple-panel form-stack"><div class="field"><label for="new-password">كلمة المرور الجديدة</label><input id="new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><div class="field"><label for="confirm-password">تأكيد كلمة المرور</label><input id="confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div><button id="password-update-submit" class="button button-primary" type="submit">حفظ كلمة المرور</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>';
   }
@@ -48,6 +49,7 @@
   async function renderProfile() {
     if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]')) return;
     if (user) {
+      document.body.classList.remove('auth-only');
       let profile = { display_name: '', username: '', bio: '', is_private: false };
       const supabase = ensureClient();
       if (supabase) {
@@ -60,7 +62,8 @@
       renderSocialInbox();
       return;
     }
-    root.innerHTML = '<div class="view-header"><div><h1>حسابك على XLive 18</h1><p>إنشاء حساب أو تسجيل الدخول</p></div></div><div class="notice-panel"><span class="notice-icon" aria-hidden="true">ⓘ</span><div><strong>للبالغين 18 عاماً أو أكثر</strong><p>قد تحتاج إلى تأكيد بريدك الإلكتروني قبل تسجيل الدخول.</p></div></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><button class="text-button" id="auth-reset" type="button">نسيت كلمة المرور؟</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div>';
+    document.body.classList.add('auth-only');
+    root.innerHTML = '<section class="auth-screen"><a class="auth-brand" href="#" aria-label="XLIVE 18"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a><div class="auth-intro"><h1>أهلاً بك في XLIVE 18</h1><p>سجّل الدخول أو أنشئ حسابك للمتابعة.</p></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><button class="text-button" id="auth-reset" type="button">نسيت كلمة المرور؟</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div></section>';
     setMode(mode);
   }
   function ensureClient() {
