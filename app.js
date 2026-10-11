@@ -17,7 +17,8 @@
     settings: { title: 'الإعدادات والخصوصية', subtitle: 'خيارات الأمان والخصوصية ستُربط بالحساب عند تنفيذ نظام المصادقة.' },
     purchases: { title: 'المشتريات والمحتوى المدفوع', subtitle: 'لا توجد مدفوعات مفعّلة حالياً. لن يتم عرض محتوى مدفوع على أنه قابل للشراء.' },
     search: { title: 'البحث والاستكشاف', subtitle: 'البحث الفعلي يحتاج إلى فهرسة بيانات المنصة المنشورة.' },
-    upload: { title: 'رفع مقطع جديد', subtitle: 'نجهّز مسار رفع آمن مع مراجعة قبل النشر.' }
+    upload: { title: 'رفع مقطع جديد', subtitle: 'نجهّز مسار رفع آمن مع مراجعة قبل النشر.' },
+    editor: { title: 'محرّر الموقع', subtitle: 'تخصيص التصميم' }
   };
 
   const descriptions = {
@@ -50,6 +51,7 @@
 
   function render(view, extra = '') {
     if (!views[view]) view = 'home';
+    if (view === 'editor') { if (window.XLiveSiteEditor) window.XLiveSiteEditor.renderEditor(); else root.innerHTML = '<p>المحرّر قيد التحميل…</p>'; return; }
     document.querySelectorAll('[data-view]').forEach(el => {
       const active = el.dataset.view === view;
       el.classList.toggle('active', active);
