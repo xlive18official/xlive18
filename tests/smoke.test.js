@@ -411,3 +411,15 @@ test('video visibility RPC is restricted to the authenticated owner', () => {
   assert.match(migration, /owner_id = auth\.uid\(\)/i);
   assert.match(migration, /grant execute on function public\.set_own_video_visibility\(uuid, text\) to authenticated/i);
 });
+
+
+test('profile avatar upload persists a private storage path with public-profile signed reads', () => {
+  const avatar = readFileSync('supabase/migrations/0031_profile_avatar_upload.sql', 'utf8');
+  assert.match(auth, /profile-avatar-file/);
+  assert.match(auth, /photo-originals'\)\.upload\(nextPath/);
+  assert.match(auth, /update\(\{avatar_path:nextPath\}\)/);
+  assert.match(auth, /createSignedUrl\(profileAvatarPath, 3600\)/);
+  assert.match(avatar, /grant update \(avatar_path\) on public\.profiles to authenticated/i);
+  assert.match(avatar, /photo_originals_select_profile_avatars/i);
+  assert.match(avatar, /p\.id = \(select auth\.uid\(\)\) or p\.is_private = false/i);
+});
