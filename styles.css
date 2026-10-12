@@ -514,3 +514,30 @@ img, video, iframe, canvas, svg {
  .creator-media-grid .clip-card-body{padding:11px}
  .creator-clip-menu button{font-size:.85rem}
 }
+
+
+/* Creator videos: Instagram-style compact five-column thumbnail grid. */
+@media(max-width:600px){
+ .creator-media-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+ .creator-media-grid .clip-card,.creator-photo-card{border-radius:4px}
+ .creator-media-grid .clip-player,.creator-media-grid .clip-placeholder,.creator-media-grid .private-video-preview{display:block;width:100%;aspect-ratio:3/4;height:auto;min-height:0;object-fit:cover;border-radius:3px}
+ .creator-media-grid .clip-player{background:#080809}
+ .creator-media-grid .clip-card-body{padding:4px 2px;gap:3px}
+ .creator-media-grid .clip-card-heading{display:grid;gap:2px;min-width:0}
+ .creator-media-grid .clip-card-heading strong{font-size:9px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+ .creator-media-grid .clip-card-heading .status-pill{font-size:8px;line-height:1.2;padding:2px 3px;white-space:normal;width:max-content;max-width:100%}
+ .creator-media-grid .clip-card-body>p,.creator-media-grid .clip-card-body>small{display:none}
+ .creator-media-grid .creator-clip-settings{position:relative;inset:auto;width:auto;z-index:25}
+ .creator-media-grid .creator-clip-menu-button{width:24px;height:24px;font-size:1rem;border-radius:5px}
+ .creator-media-grid .creator-clip-menu{position:absolute;top:27px;left:0;width:min(210px,calc(100vw - 28px));min-width:0;max-width:calc(100vw - 28px);margin:0;padding:6px;box-shadow:0 8px 24px #000b;background:var(--panel);z-index:50}
+ .creator-media-grid .creator-clip-menu p{font-size:11px}
+ .creator-media-grid .creator-clip-menu button{min-height:36px;padding:7px;font-size:12px;line-height:1.35}
+ .creator-media-grid .private-video-preview{display:flex;align-items:center;justify-content:center}
+ .creator-media-grid .private-video-lock{font-size:17px}
+ .creator-media-grid .private-video-preview strong{font-size:10px}
+}
+@media(max-width:360px){
+ .creator-media-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+ .creator-media-grid .clip-card-body{padding:3px 1px}
+ .creator-media-grid .clip-card-heading strong{font-size:8px}
+}
