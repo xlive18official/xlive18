@@ -562,3 +562,19 @@ img, video, iframe, canvas, svg {
  .creator-media-grid .creator-clip-menu{width:158px;max-width:calc(100vw - 20px);padding:4px}
  .creator-media-grid .creator-clip-menu button{font-size:10px;min-height:30px}
 }
+
+
+/* Native-free confirmation dialogs inside the admin workspace. */
+.admin-dialog-backdrop{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.76);backdrop-filter:blur(5px)}
+.admin-dialog{width:min(440px,100%);max-height:min(90dvh,680px);overflow:auto;padding:22px;border:1px solid #383840;border-radius:18px;background:#17171c;color:var(--text,#f5f5f7);box-shadow:0 24px 80px #000b;text-align:right;animation:admin-dialog-in .16s ease-out}
+.admin-dialog-mark{display:grid;place-items:center;width:38px;height:38px;margin-bottom:12px;border-radius:12px;background:#342025;color:#ff6975;font-size:22px;font-weight:800}
+.admin-dialog h2{font-size:18px;margin:0 0 8px}
+.admin-dialog-message{font-size:14px;line-height:1.85;color:#d0d0d8;margin:0 0 18px;overflow-wrap:anywhere}
+.admin-dialog-input-label{display:block;margin:0 0 6px;font-size:12px;color:#c5c5ce}
+.admin-dialog textarea{display:block;width:100%;resize:vertical;min-height:76px;padding:10px;border:1px solid #42424b;border-radius:10px;background:#101014;color:var(--text,#f5f5f7);font:inherit;font-size:13px;margin-bottom:16px}
+.admin-dialog-actions{display:flex;gap:9px;justify-content:flex-start;flex-wrap:wrap}
+.admin-dialog-actions .button{min-width:94px}
+.button-danger{border:1px solid #a52b3a;background:#a92334;color:#fff}
+.button-danger:hover{background:#c42d40}
+@keyframes admin-dialog-in{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:420px){.admin-dialog{padding:17px;border-radius:14px}.admin-dialog h2{font-size:16px}.admin-dialog-message{font-size:13px}.admin-dialog-actions .button{flex:1;min-width:0}}
