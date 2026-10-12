@@ -72,7 +72,7 @@ document.addEventListener('click',async e=>{
   if(privateAction.dataset.privateAction==='delete'){
    if(!await siteDialog('سيتم حذف هذا المحتوى الخاص وملفاته نهائياً. لا يمكن التراجع عن هذه العملية.',{confirm:true,danger:true,confirmLabel:'حذف نهائي'}))return;
    privateAction.disabled=true;
-   const {error}=await db.rpc('admin_delete_private_content',{p_type:type,p_id:id});
+   const bucket=type==='video'?'video-originals':'photo-originals'; const paths=[item.storage_path,...(type==='video'&&item.preview_path?[item.preview_path]:[])].filter(Boolean); const {error:storageError}=await db.storage.from(bucket).remove(paths); if(storageError){notify('تعذر حذف الملف من التخزين: '+esc(storageError.message));privateAction.disabled=false;return} const {error}=await db.rpc('admin_delete_private_content',{p_type:type,p_id:id});
    if(error){notify('تعذر حذف المحتوى: '+esc(error.message));privateAction.disabled=false;return}
    notify('تم حذف المحتوى الخاص وملفاته نهائياً.');
    await render();return;
