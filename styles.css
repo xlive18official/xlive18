@@ -583,3 +583,62 @@ img, video, iframe, canvas, svg {
 .button-danger:hover{background:#c42d40}
 @keyframes admin-dialog-in{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:420px){.admin-dialog{padding:17px;border-radius:14px}.admin-dialog h2{font-size:16px}.admin-dialog-message{font-size:13px}.admin-dialog-actions .button{flex:1;min-width:0}}
+
+
+/* Refined mobile bottom navigation: centered, balanced controls with clear active state. */
+@media(max-width:760px){
+  .mobile-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(2px,1.2vw,8px);
+    height:calc(68px + env(safe-area-inset-bottom));
+    padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+    background:rgba(15,15,19,.96);
+    border-top:1px solid #303039;
+    box-shadow:0 -8px 28px rgba(0,0,0,.22);
+    overflow:hidden;
+  }
+  .mobile-nav button{
+    flex:1 1 0;
+    width:auto;
+    min-width:0;
+    max-width:112px;
+    height:100%;
+    padding:5px 2px;
+    border:1px solid transparent;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    white-space:nowrap;
+    overflow:hidden;
+    color:#a3a3af;
+    font-size:clamp(9px,2.5vw,11px);
+    line-height:1.2;
+    text-align:center;
+    transition:background .18s ease,color .18s ease,border-color .18s ease;
+  }
+  .mobile-nav button span{
+    display:grid;
+    place-items:center;
+    min-width:26px;
+    height:25px;
+    font-size:20px;
+    line-height:1;
+  }
+  .mobile-nav button.active{
+    color:#fff;
+    background:linear-gradient(180deg,rgba(240,68,82,.17),rgba(240,68,82,.07));
+    border-color:rgba(240,68,82,.28);
+  }
+  .mobile-nav button.active span{color:#ff6875}
+  .mobile-nav button:focus-visible{outline-offset:-2px}
+}
+@media(max-width:380px){
+  .mobile-nav{gap:1px;padding-inline:5px}
+  .mobile-nav button{font-size:8px;border-radius:9px;padding-inline:1px}
+  .mobile-nav button span{font-size:18px;min-width:23px;height:23px}
+}
