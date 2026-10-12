@@ -46,7 +46,7 @@ async function render(){
   const bucket=x.type==='video'?'video-originals':'photo-originals', path=x.type==='video'?(x.preview_path||x.storage_path):x.storage_path;
   const {data}=await db.storage.from(bucket).createSignedUrl(path,1800);
   if(data?.signedUrl)media=x.type==='video'&&!x.preview_path?'<video class="admin-media-preview" controls playsinline preload="metadata" src="'+esc(data.signedUrl)+'"></video>':'<img class="admin-media-preview" src="'+esc(data.signedUrl)+'" alt="معاينة المنشور">';
-  return '<article class="admin-queue-card">'+media+'<div class="admin-item-info"><span class="status-pill">'+(x.type==='video'?'فيديو':'صورة')+'</span><h3>'+esc(x.title||'منشور بلا عنوان')+'</h3><p>'+esc(x.description||'')+'</p><small>'+esc(x.username?'@'+x.username:x.owner_email||x.owner_id)+' · '+date(x.created_at)+'</small><div class="social-actions"><button class="button button-primary" data-admin-action="approve" data-kind="'+x.type+'" data-id="'+x.id+'">موافقة ونشر</button><button class="button button-secondary" data-admin-action="reject" data-kind="'+x.type+'" data-id="'+x.id+'">رفض</button><button class="button button-danger" data-admin-action="delete-content" data-kind="'+x.type+'" data-id="'+x.id+'">حذف</button></div></div></article>';
+  return '<article class="admin-queue-card">'+media+'<div class="admin-item-info"><span class="status-pill">'+(x.type==='video'?'فيديو':'صورة')+'</span><h3>'+esc(x.title||'منشور بلا عنوان')+'</h3><p>'+esc(x.description||'')+'</p><small>'+esc(x.username?'@'+x.username:x.owner_email||x.owner_id)+' · '+date(x.created_at)+'</small><div class="social-actions"><button class="button button-primary" data-admin-action="approve" data-kind="'+x.type+'" data-id="'+x.id+'">موافقة ونشر</button><button class="button button-secondary" data-admin-action="reject" data-kind="'+x.type+'" data-id="'+x.id+'">رفض</button><button class="button button-danger" data-admin-action="delete-content" data-kind="'+x.type+'" data-id="'+x.id+'" data-storage-path="'+esc(x.storage_path)+'" data-preview-path="'+esc(x.preview_path||'')+'">حذف</button></div></div></article>';
  }))).join('')+'</div>';
  const privatePanel=document.getElementById('admin-private-content');
  privateItems.clear();
@@ -97,7 +97,7 @@ document.addEventListener('click',async e=>{
   if(error){notify('تعذر تحديث المنشور: '+error.message);return}
  }else if(act==='delete-content'){
   if(!await siteDialog('سيتم حذف المنشور وملفاته نهائياً. لا يمكن التراجع عن هذه العملية.',{confirm:true,danger:true,confirmLabel:'حذف نهائي'}))return;
-  const {error}=await db.rpc('admin_delete_content',{p_type:b.dataset.kind,p_id:b.dataset.id});if(error){notify('تعذر الحذف: '+error.message);return}
+  const kind=b.dataset.kind,bucket=kind==='video'?'video-originals':'photo-originals';const paths=[b.dataset.storagePath,...(kind==='video'&&b.dataset.previewPath?[b.dataset.previewPath]:[])].filter(Boolean);const {error:storageError}=await db.storage.from(bucket).remove(paths);if(storageError){notify('تعذر حذف الملف من التخزين: '+esc(storageError.message));return}const {error}=await db.rpc('admin_delete_content',{p_type:kind,p_id:b.dataset.id});if(error){notify('حُذفت الملفات من التخزين لكن تعذر حذف سجل المحتوى: '+esc(error.message));return}
  }else if(act==='ban-user'){
   if(!await siteDialog('سيتم حظر هذا الحساب ومنعه من تسجيل الدخول.',{confirm:true,danger:true,confirmLabel:'حظر الحساب'}))return;
   const {error}=await db.rpc('admin_ban_user',{p_user_id:b.dataset.id,p_reason:'حظر من لوحة الإدارة'});if(error){notify('تعذر الحظر: '+error.message);return}
