@@ -12,6 +12,20 @@ function notify(message){
  if(!n&&root){n=document.createElement('div');n.id='admin-feedback';n.className='notice-panel';n.setAttribute('role','status');n.setAttribute('aria-live','polite');root.prepend(n)}
  if(n)n.textContent=message;
 }
+function siteDialog(message,{confirm=false,danger=false,input=false,inputLabel='التفاصيل (اختياري)',confirmLabel='متابعة'}={}){
+ return new Promise(resolve=>{
+  root.querySelector('[data-admin-dialog]')?.remove();
+  const modal=document.createElement('div');modal.dataset.adminDialog='true';modal.className='admin-dialog-backdrop';modal.setAttribute('role','presentation');
+  modal.innerHTML='<section class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title"><div class="admin-dialog-mark">'+(danger?'!':'i')+'</div><h2 id="admin-dialog-title">'+(danger?'تأكيد الإجراء':'تأكيد من لوحة الإدارة')+'</h2><p class="admin-dialog-message">'+esc(message)+'</p>'+(input?'<label class="admin-dialog-input-label" for="admin-dialog-input">'+esc(inputLabel)+'</label><textarea id="admin-dialog-input" rows="3" maxlength="500" placeholder="اكتب السبب هنا…"></textarea>':'')+'<div class="admin-dialog-actions"><button type="button" class="button button-secondary" data-dialog-choice="cancel">إلغاء</button><button type="button" class="button '+(danger?'button-danger':'button-primary')+'" data-dialog-choice="ok">'+esc(confirmLabel)+'</button></div></section>';
+  root.appendChild(modal);
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;document.removeEventListener('keydown',onKey);modal.remove();resolve(value)};
+  const onKey=event=>{if(event.key==='Escape'){event.preventDefault();finish(input?null:false)}};
+  modal.addEventListener('click',event=>{const choice=event.target.closest('[data-dialog-choice]');if(choice){if(choice.dataset.dialogChoice==='cancel'){finish(input?null:false);return}finish(input?(modal.querySelector('#admin-dialog-input')?.value||''):true);return}if(event.target===modal)finish(input?null:false)});
+  document.addEventListener('keydown',onKey);
+  modal.querySelector('[data-dialog-choice="ok"]')?.focus();
+ });
+}
 async function userNow(){if(!db)return null;const {data}=await db.auth.getSession();return data?.session?.user||null}
 async function render(){
  if(!root){notify('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}
@@ -49,14 +63,14 @@ async function render(){
 document.addEventListener('click',async e=>{
  const nav=e.target.closest('#admin-nav,#admin-mobile-nav,[data-view="admin"]');
  if(nav){e.preventDefault();e.stopImmediatePropagation();if(!root){notify('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}if(!window.XLIVE_SUPABASE||!window.supabase?.createClient){root.innerHTML='<div class="view-header"><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر الاتصال بخدمة الإدارة</h3><p>تحقق من تحميل إعدادات Supabase ثم أعد تحميل الصفحة.</p></div>';return}await render();return}
- if(e.target.closest('[data-private-action="close"]')){root.querySelector('[data-private-viewer]')?.remove();return}
+ if(e.target.closest('[data-private-action="close"]')){const viewer=root.querySelector('[data-private-viewer]');if(viewer){viewer.querySelectorAll('video').forEach(v=>{v.pause();v.removeAttribute('src');v.load()});viewer.remove()}return}
  const privateAction=e.target.closest('[data-private-action]');
  if(privateAction){
   e.preventDefault();e.stopImmediatePropagation();
   const type=privateAction.dataset.kind,id=privateAction.dataset.id,item=privateItems.get(type+':'+id);
   if(!item){notify('لم يعد هذا المحتوى متاحاً. حدّث لوحة الإدارة.');return}
   if(privateAction.dataset.privateAction==='delete'){
-   if(!confirm('حذف هذا المحتوى الخاص وملفاته نهائياً؟ لا يمكن التراجع عن الحذف.'))return;
+   if(!await siteDialog('سيتم حذف هذا المحتوى الخاص وملفاته نهائياً. لا يمكن التراجع عن هذه العملية.',{confirm:true,danger:true,confirmLabel:'حذف نهائي'}))return;
    privateAction.disabled=true;
    const {error}=await db.rpc('admin_delete_private_content',{p_type:type,p_id:id});
    if(error){notify('تعذر حذف المحتوى: '+esc(error.message));privateAction.disabled=false;return}
@@ -78,20 +92,20 @@ document.addEventListener('click',async e=>{
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
  const u=await userNow();if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){notify('غير مصرح لك بتنفيذ هذا الإجراء.');return}
  if(act==='approve'||act==='reject'){
-  let reason=null;if(act==='reject'){reason=prompt('سبب الرفض (اختياري):');if(reason===null)return}
+  let reason=null;if(act==='reject'){reason=await siteDialog('يمكنك كتابة سبب رفض المنشور ليظهر ضمن سجل المراجعة.',{input:true,inputLabel:'سبب الرفض (اختياري)',confirmLabel:'تأكيد الرفض'});if(reason===null)return}
   const {error}=await db.rpc('admin_review_content',{p_type:b.dataset.kind,p_id:b.dataset.id,p_decision:act,p_reason:reason});
   if(error){notify('تعذر تحديث المنشور: '+error.message);return}
  }else if(act==='delete-content'){
-  if(!confirm('حذف المنشور وملفه نهائياً؟'))return;
+  if(!await siteDialog('سيتم حذف المنشور وملفاته نهائياً. لا يمكن التراجع عن هذه العملية.',{confirm:true,danger:true,confirmLabel:'حذف نهائي'}))return;
   const {error}=await db.rpc('admin_delete_content',{p_type:b.dataset.kind,p_id:b.dataset.id});if(error){notify('تعذر الحذف: '+error.message);return}
  }else if(act==='ban-user'){
-  if(!confirm('حظر هذا الحساب ومنعه من تسجيل الدخول؟'))return;
+  if(!await siteDialog('سيتم حظر هذا الحساب ومنعه من تسجيل الدخول.',{confirm:true,danger:true,confirmLabel:'حظر الحساب'}))return;
   const {error}=await db.rpc('admin_ban_user',{p_user_id:b.dataset.id,p_reason:'حظر من لوحة الإدارة'});if(error){notify('تعذر الحظر: '+error.message);return}
  }else if(act==='unban-user'){
-  if(!confirm('إلغاء حظر الحساب؟'))return;
+  if(!await siteDialog('هل تريد إلغاء حظر هذا الحساب؟',{confirm:true,confirmLabel:'إلغاء الحظر'}))return;
   const {error}=await db.rpc('admin_unban_user',{p_user_id:b.dataset.id});if(error){notify('تعذر إلغاء الحظر: '+error.message);return}
  }else if(act==='delete-user'){
-  if(!confirm('سيتم حذف الحساب نهائياً. هل تريد المتابعة؟'))return;
+  if(!await siteDialog('سيتم حذف الحساب نهائياً. قد يؤدي ذلك إلى فقدان بياناته المرتبطة، ولا يمكن التراجع عن العملية.',{confirm:true,danger:true,confirmLabel:'حذف الحساب نهائياً'}))return;
   const {error}=await db.rpc('admin_delete_user',{p_user_id:b.dataset.id});if(error){notify('تعذر حذف الحساب: '+error.message);return}
  }
  notify(({approve:'تمت مراجعة المنشور والموافقة عليه بنجاح.',reject:'تم رفض المنشور.', 'delete-content':'تم حذف المنشور.', 'ban-user':'تم حظر الحساب.', 'unban-user':'تم إلغاء حظر الحساب.', 'delete-user':'تم حذف الحساب.'})[act]||'تم تنفيذ الإجراء بنجاح.');
