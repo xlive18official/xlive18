@@ -306,8 +306,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-39'));
-  assert.ok(html.includes('app.js?v=20261012-39'));
+  assert.ok(html.includes('styles.css?v=20261012-40'));
+  assert.ok(html.includes('app.js?v=20261012-40'));
 });
 
 
