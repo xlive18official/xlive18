@@ -5,6 +5,7 @@ const { readFileSync } = require('node:fs');
 const html = readFileSync('index.html', 'utf8');
 const app = readFileSync('app.js', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
+const admin = readFileSync('admin.js', 'utf8');
 const schema = readFileSync('supabase/migrations/0001_initial_schema.sql', 'utf8');
 const storage = readFileSync('supabase/migrations/0002_private_video_storage.sql', 'utf8');
 const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
@@ -253,6 +254,22 @@ test('video storage bucket is private and scoped to the authenticated owner', ()
 const auth = readFileSync('auth.js', 'utf8');
 const config = readFileSync('supabase-config.js', 'utf8');
 
+test('admin private media access is restricted, audited, and deletable only through guarded RPCs', () => {
+  const migration = readFileSync('supabase/migrations/0029_admin_private_content_access.sql', 'utf8');
+  assert.match(admin, /rpc\('admin_private_content_list'\)/);
+  assert.match(admin, /rpc\('admin_log_private_content_access'/);
+  assert.match(admin, /rpc\('admin_delete_private_content'/);
+  assert.match(admin, /data-private-action="view"/);
+  assert.match(admin, /data-private-action="delete"/);
+  assert.match(migration, /lower\(coalesce\(auth\.jwt\(\) ->> 'email', ''\)\) = 'xlive18\.official@gmail\.com'/i);
+  assert.match(migration, /create table if not exists public\.admin_private_content_audit/i);
+  assert.match(migration, /where v\.visibility='private'/i);
+  assert.match(migration, /where ph\.visibility='private'/i);
+  assert.match(migration, /revoke all on function public\.admin_delete_private_content\(text,uuid\) from public, anon/i);
+  assert.match(migration, /create policy "Manager can view private photos"/i);
+  assert.match(migration, /create policy "Manager can view private videos"/i);
+});
+ 
 test('Supabase client and auth module load before account interaction', () => {
   assert.match(html, /cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@2/);
   assert.match(html, /src="\.\/supabase-config\.js(?:\?[^"]*)?"/);
@@ -306,8 +323,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-41'));
-  assert.ok(html.includes('app.js?v=20261012-41'));
+  assert.ok(html.includes('styles.css?v=20261012-42'));
+  assert.ok(html.includes('app.js?v=20261012-42'));
 });
 
 
