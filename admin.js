@@ -5,9 +5,15 @@ const root=document.getElementById('app-view');
 const db=config&&window.supabase?.createClient?(window.XLiveAuth?.getClient?.() || window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})):null;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const date=v=>v?new Date(v).toLocaleDateString('ar'): '—';
+function notify(message){
+ if(window.XLiveApp?.showToast){window.XLiveApp.showToast(message);return}
+ let n=document.getElementById('admin-feedback');
+ if(!n&&root){n=document.createElement('div');n.id='admin-feedback';n.className='notice-panel';n.setAttribute('role','status');n.setAttribute('aria-live','polite');root.prepend(n)}
+ if(n)n.textContent=message;
+}
 async function userNow(){if(!db)return null;const {data}=await db.auth.getSession();return data?.session?.user||null}
 async function render(){
- if(!root){alert('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}
+ if(!root){notify('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}
  if(!db){root.innerHTML='<div class="view-header"><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر تهيئة خدمة الإدارة</h3><p>إعدادات Supabase أو مكتبة الاتصال غير متاحة. أعد تحميل الصفحة، وإذا استمرت المشكلة أرسل هذه الرسالة للدعم.</p><p>config: '+Boolean(config)+' · supabase: '+Boolean(window.supabase?.createClient)+'</p></div>';return}
  const u=await userNow();
  document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view==='admin'));
@@ -33,28 +39,29 @@ async function render(){
 }
 document.addEventListener('click',async e=>{
  const nav=e.target.closest('#admin-nav,#admin-mobile-nav,[data-view="admin"]');
- if(nav){e.preventDefault();e.stopImmediatePropagation();if(!root){alert('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}if(!window.XLIVE_SUPABASE||!window.supabase?.createClient){root.innerHTML='<div class="view-header"><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر الاتصال بخدمة الإدارة</h3><p>تحقق من تحميل إعدادات Supabase ثم أعد تحميل الصفحة.</p></div>';return}await render();return}
+ if(nav){e.preventDefault();e.stopImmediatePropagation();if(!root){notify('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}if(!window.XLIVE_SUPABASE||!window.supabase?.createClient){root.innerHTML='<div class="view-header"><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر الاتصال بخدمة الإدارة</h3><p>تحقق من تحميل إعدادات Supabase ثم أعد تحميل الصفحة.</p></div>';return}await render();return}
  const b=e.target.closest('[data-admin-action]');if(!b)return;
  e.preventDefault();e.stopImmediatePropagation();
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
- const u=await userNow();if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){alert('غير مصرح');return}
+ const u=await userNow();if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){notify('غير مصرح لك بتنفيذ هذا الإجراء.');return}
  if(act==='approve'||act==='reject'){
   let reason=null;if(act==='reject'){reason=prompt('سبب الرفض (اختياري):');if(reason===null)return}
   const {error}=await db.rpc('admin_review_content',{p_type:b.dataset.kind,p_id:b.dataset.id,p_decision:act,p_reason:reason});
-  if(error){alert('تعذر تحديث المنشور: '+error.message);return}
+  if(error){notify('تعذر تحديث المنشور: '+error.message);return}
  }else if(act==='delete-content'){
   if(!confirm('حذف المنشور وملفه نهائياً؟'))return;
-  const {error}=await db.rpc('admin_delete_content',{p_type:b.dataset.kind,p_id:b.dataset.id});if(error){alert('تعذر الحذف: '+error.message);return}
+  const {error}=await db.rpc('admin_delete_content',{p_type:b.dataset.kind,p_id:b.dataset.id});if(error){notify('تعذر الحذف: '+error.message);return}
  }else if(act==='ban-user'){
   if(!confirm('حظر هذا الحساب ومنعه من تسجيل الدخول؟'))return;
-  const {error}=await db.rpc('admin_ban_user',{p_user_id:b.dataset.id,p_reason:'حظر من لوحة الإدارة'});if(error){alert('تعذر الحظر: '+error.message);return}
+  const {error}=await db.rpc('admin_ban_user',{p_user_id:b.dataset.id,p_reason:'حظر من لوحة الإدارة'});if(error){notify('تعذر الحظر: '+error.message);return}
  }else if(act==='unban-user'){
   if(!confirm('إلغاء حظر الحساب؟'))return;
-  const {error}=await db.rpc('admin_unban_user',{p_user_id:b.dataset.id});if(error){alert('تعذر إلغاء الحظر: '+error.message);return}
+  const {error}=await db.rpc('admin_unban_user',{p_user_id:b.dataset.id});if(error){notify('تعذر إلغاء الحظر: '+error.message);return}
  }else if(act==='delete-user'){
   if(!confirm('سيتم حذف الحساب نهائياً. هل تريد المتابعة؟'))return;
-  const {error}=await db.rpc('admin_delete_user',{p_user_id:b.dataset.id});if(error){alert('تعذر حذف الحساب: '+error.message);return}
+  const {error}=await db.rpc('admin_delete_user',{p_user_id:b.dataset.id});if(error){notify('تعذر حذف الحساب: '+error.message);return}
  }
+ notify(({approve:'تمت مراجعة المنشور والموافقة عليه بنجاح.',reject:'تم رفض المنشور.', 'delete-content':'تم حذف المنشور.', 'ban-user':'تم حظر الحساب.', 'unban-user':'تم إلغاء حظر الحساب.', 'delete-user':'تم حذف الحساب.'})[act]||'تم تنفيذ الإجراء بنجاح.');
  await render();
 },true);
 window.XLiveAdmin={render};
