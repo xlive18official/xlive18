@@ -118,6 +118,7 @@
     if (!panel) return;
     if (creatorTab === 'videos') {
       let query = supabase.from('videos').select('id,title,description,storage_path,preview_path,status,visibility,created_at').eq('owner_id', viewedUserId).order('created_at',{ascending:false}).limit(60);
+      if (!isOwnProfile) query = query.eq('status','approved').in('visibility',['public','profile']);
       const {data: rows, error} = await query;
       if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من إعدادات قاعدة البيانات والصلاحيات.</p></div>'; return; }
       const cards = await Promise.all((rows || []).map(async v => {
