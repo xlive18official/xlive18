@@ -496,3 +496,21 @@ img, video, iframe, canvas, svg {
 .creator-clip-menu button:hover,.creator-clip-menu button[aria-current="true"]{background:var(--panel2);outline:1px solid var(--line)}
 .creator-clip-menu button[aria-current="true"]::after{content:' ✓';color:var(--accent,#f04452);font-weight:700}
 .creator-media-grid .clip-card .clip-player{border-radius:10px 10px 0 0}
+
+
+/* Mobile: keep video visibility choices inside the card so nothing is clipped off-screen. */
+@media(max-width:600px){
+ .creator-media-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .creator-media-grid .clip-card{overflow:visible}
+ .creator-media-grid .clip-card-body{padding:9px;gap:8px}
+ .creator-clip-settings{position:relative;inset:auto;width:100%;z-index:25}
+ .creator-clip-menu-button{width:34px;height:34px;font-size:1.45rem}
+ .creator-clip-menu{position:static;width:100%;min-width:0;max-width:none;margin-top:6px;padding:6px;box-shadow:none}
+ .creator-clip-menu p{font-size:.72rem}
+ .creator-clip-menu button{min-height:42px;padding:9px 7px;font-size:.78rem;line-height:1.45}
+}
+@media(max-width:360px){
+ .creator-media-grid{grid-template-columns:minmax(0,1fr)}
+ .creator-media-grid .clip-card-body{padding:11px}
+ .creator-clip-menu button{font-size:.85rem}
+}
