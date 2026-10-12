@@ -332,8 +332,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-43'));
-  assert.ok(html.includes('app.js?v=20261012-43'));
+  assert.ok(html.includes('styles.css?v=20261012-44'));
+  assert.ok(html.includes('app.js?v=20261012-44'));
 });
 
 
@@ -364,8 +364,15 @@ test('profile editing is explicit and sign out lives in the sidebar', () => {
   assert.match(html, /sidebar-signout/);
 });
 
-test('creator page is available from the bottom navigation and has media tabs', () => {
-  assert.match(html, /data-view="creator"><span>▣<\/span>الصفحة الشخصية/);
+test('creator, saved items, and account links live in the sidebar and not the mobile bottom bar', () => {
+  const sidebar = html.slice(html.indexOf('<aside class="sidebar"'), html.indexOf('</aside>'));
+  const mobileNav = html.slice(html.indexOf('<nav class="mobile-nav"'), html.indexOf('</nav>', html.indexOf('<nav class="mobile-nav"')));
+  assert.match(sidebar, /data-view="creator"[^>]*>[\s\S]*?الصفحة الشخصية/);
+  assert.match(sidebar, /data-view="saved"[^>]*>[\s\S]*?المحفوظات/);
+  assert.match(sidebar, /data-view="profile"[^>]*>[\s\S]*?حسابي/);
+  assert.doesNotMatch(mobileNav, /data-view="creator"|data-view="saved"|data-view="profile"|mobile-signout|تسجيل الخروج/);
+  assert.match(sidebar, /id="auth-signout"[^>]*hidden/);
+  assert.match(sidebar, /sidebar-signout/);
   assert.match(app, /creator: \{ title: 'الصفحة الشخصية'/);
   assert.match(app, /renderCreatorProfile\(\)/);
   assert.match(auth, /data-creator-tab="videos"/);
