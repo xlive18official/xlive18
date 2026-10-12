@@ -6,19 +6,24 @@
   <meta name="theme-color" content="#0b0b0d">
   <meta name="description" content="XLive 18 — منصة اجتماعية وترفيهية للبالغين.">
   <title>XLive 18 — منصتك الاجتماعية</title>
-  <link rel="stylesheet" href="./styles.css?v=20261012-43">
+  <link rel="stylesheet" href="./styles.css?v=20261012-44">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./supabase-config.js?v=20261012-43"></script>
-  <script src="./app.js?v=20261012-43" defer></script>
-  <script src="./auth.js?v=20261012-43" defer></script>
-  <script src="./admin.js?v=20261012-43" defer></script>
-  <script src="./account-controls.js?v=20261012-43" defer></script>
-  <script src="./site-editor.js?v=20261012-43" defer></script>
+  <script src="./supabase-config.js?v=20261012-44"></script>
+  <script src="./app.js?v=20261012-44" defer></script>
+  <script src="./auth.js?v=20261012-44" defer></script>
+  <script src="./admin.js?v=20261012-44" defer></script>
+  <script src="./account-controls.js?v=20261012-44" defer></script>
+  <script src="./site-editor.js?v=20261012-44" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar" aria-label="التنقل الرئيسي">
       <div class="sidebar-heading"><a class="brand" href="#home" data-view="home" aria-label="XLive 18 الرئيسية"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a><button class="sidebar-close" id="sidebar-close" type="button" aria-label="إغلاق القائمة">←</button></div>
+      <nav class="nav-list" aria-label="روابط الحساب">
+        <button class="nav-item" data-view="creator"><span class="nav-icon">▣</span>الصفحة الشخصية</button>
+        <button class="nav-item" data-view="saved"><span class="nav-icon">♡</span>المحفوظات</button>
+        <button class="nav-item" data-view="profile"><span class="nav-icon">◎</span>حسابي</button>
+      </nav>
       <div class="sidebar-bottom">
         <button class="nav-item" data-view="admin" id="admin-nav" aria-label="فتح لوحة الإدارة"><span class="nav-icon">⚙</span>الإدارة</button>
         <button class="nav-item sidebar-signout" id="auth-signout" type="button" hidden><span class="nav-icon">↪</span>تسجيل الخروج</button>
@@ -49,7 +54,7 @@
     </main>
   </div>
   <nav class="mobile-nav" aria-label="التنقل للهاتف">
-    <button class="active" data-view="home"><span>⌂</span>الرئيسية</button><button data-view="clips"><span>▷</span>المقاطع</button><button data-view="rooms"><span>◉</span>الغرف</button><button data-view="messages"><span>✉</span>الرسائل</button><button data-view="saved"><span>♡</span>المحفوظات</button><button data-view="creator"><span>▣</span>الصفحة الشخصية</button><button data-view="profile"><span>◎</span>حسابي</button><button data-view="editor" hidden><span>✎</span>تعديل الموقع</button><button id="mobile-signout" hidden><span>↪</span>تسجيل الخروج</button>
+    <button class="active" data-view="home"><span>⌂</span>الرئيسية</button><button data-view="clips"><span>▷</span>المقاطع</button><button data-view="rooms"><span>◉</span>الغرف</button><button data-view="messages"><span>✉</span>الرسائل</button><button data-view="editor" hidden><span>✎</span>تعديل الموقع</button>
   </nav>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script>
