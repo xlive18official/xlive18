@@ -9,6 +9,7 @@
   let subscription = null;
   let activeConversationId = null;
   let passwordRecoveryActive = false;
+  let profileAvatarPath = null;
 
   function feedback(message) {
     const node = document.getElementById('auth-feedback');
@@ -224,13 +225,19 @@
       let profile = { display_name: '', username: '', bio: '', is_private: false };
       const supabase = ensureClient();
       if (supabase) {
-        const { data } = await supabase.from('profiles').select('display_name,username,bio,is_private').eq('id', user.id).maybeSingle();
+        const { data } = await supabase.from('profiles').select('display_name,username,bio,is_private,avatar_path').eq('id', user.id).maybeSingle();
         if (data) profile = data;
       }
       if (!document.querySelector('[data-view].active')?.matches('[data-view="profile"]') || !user) return;
       const signoutButton = document.getElementById('auth-signout');
       if (signoutButton) signoutButton.hidden = false;
-      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>خلّي حسابك يعكس شخصيتك.</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><p class="profile-email">' + escapeHtml(user.email) + '</p><form id="profile-form" class="form-stack"><div class="field"><label for="profile-username">اسم المستخدم</label><input id="profile-username" value="' + escapeHtml(profile.username) + '" disabled><p class="field-help">اسم المستخدم الحالي.</p></div><div class="field"><label for="profile-display-name">الاسم الظاهر</label><input id="profile-display-name" maxlength="60" value="' + escapeHtml(profile.display_name) + '" placeholder="الاسم الذي يراه الآخرون" disabled></div><div class="field"><label for="profile-bio">نبذة عنك</label><textarea id="profile-bio" maxlength="500" rows="4" placeholder="احكي باختصار عنك…" disabled>' + escapeHtml(profile.bio) + '</textarea></div><label class="auth-age"><input id="profile-private" type="checkbox" ' + (profile.is_private ? 'checked' : '') + ' disabled> جعل حسابي خاصاً</label><button class="button button-primary" id="profile-save" type="button">تعديل</button></form><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
+      root.innerHTML = '<div class="view-header"><div><p class="eyebrow">XLIVE 18 / PROFILE</p><h1>ملفي الشخصي</h1><p>خلّي حسابك يعكس شخصيتك.</p></div></div><div class="simple-panel auth-panel"><p class="eyebrow">الحساب المتصل</p><p class="profile-email">' + escapeHtml(user.email) + '</p><section class="profile-avatar-card" aria-label="الصورة الشخصية"><div class="profile-avatar-preview" id="profile-avatar-preview"><span>' + escapeHtml((profile.display_name || profile.username || user.email || 'م').slice(0,1).toUpperCase()) + '</span></div><div class="profile-avatar-controls"><strong>الصورة الشخصية</strong><p>ارفع صورة واضحة لحسابك. JPG أو PNG أو WebP، حتى 5 ميغابايت.</p><input id="profile-avatar-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="اختر صورة شخصية"><div class="profile-avatar-actions"><button class="button button-primary" id="profile-avatar-save" type="button">حفظ الصورة</button><button class="button button-secondary" id="profile-avatar-remove" type="button" ' + (profile.avatar_path ? '' : 'hidden') + '>إزالة الصورة</button></div><p id="profile-avatar-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div></section><form id="profile-form" class="form-stack"><div class="field"><label for="profile-username">اسم المستخدم</label><input id="profile-username" value="' + escapeHtml(profile.username) + '" disabled><p class="field-help">اسم المستخدم الحالي.</p></div><div class="field"><label for="profile-display-name">الاسم الظاهر</label><input id="profile-display-name" maxlength="60" value="' + escapeHtml(profile.display_name) + '" placeholder="الاسم الذي يراه الآخرون" disabled></div><div class="field"><label for="profile-bio">نبذة عنك</label><textarea id="profile-bio" maxlength="500" rows="4" placeholder="احكي باختصار عنك…" disabled>' + escapeHtml(profile.bio) + '</textarea></div><label class="auth-age"><input id="profile-private" type="checkbox" ' + (profile.is_private ? 'checked' : '') + ' disabled> جعل حسابي خاصاً</label><button class="button button-primary" id="profile-save" type="button">تعديل</button></form><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></div>';
+      profileAvatarPath = profile.avatar_path || null;
+      if (profileAvatarPath) {
+        const {data: avatarData, error: avatarError} = await supabase.storage.from('photo-originals').createSignedUrl(profileAvatarPath, 3600);
+        const preview = document.getElementById('profile-avatar-preview');
+        if (!avatarError && avatarData?.signedUrl && preview) preview.innerHTML = '<img src="' + escapeHtml(avatarData.signedUrl) + '" alt="الصورة الشخصية الحالية">';
+      }
       root.insertAdjacentHTML('beforeend', '<section class="simple-panel social-inbox"><h2>طلبات المتابعة</h2><div id="follow-requests-panel"><p class="field-help">جارٍ تحميل الطلبات…</p></div><h2>الحسابات المحظورة</h2><div id="blocked-accounts-panel"><p class="field-help">جارٍ تحميل قائمة الحظر…</p></div></section>');
       renderSocialInbox();
       return;
@@ -251,8 +258,71 @@
     return client;
   }
   document.addEventListener('click', async event => {
-    const target = event.target.closest('[data-auth-mode],#auth-signout,#auth-reset,#profile-save');
+    const target = event.target.closest('[data-auth-mode],#auth-signout,#auth-reset,#profile-save,#profile-avatar-save,#profile-avatar-remove');
     if (!target) return;
+    if (target.id === 'profile-avatar-save' || target.id === 'profile-avatar-remove') {
+      event.preventDefault();
+      const supabase = ensureClient();
+      await syncCurrentUser(supabase);
+      if (!supabase || !user) { feedback('سجّل الدخول أولاً.'); return; }
+      const message = document.getElementById('profile-avatar-feedback');
+      const saveButton = document.getElementById('profile-avatar-save');
+      const removeButton = document.getElementById('profile-avatar-remove');
+      const preview = document.getElementById('profile-avatar-preview');
+      const file = document.getElementById('profile-avatar-file')?.files?.[0];
+      const allowed = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+      if (target.id === 'profile-avatar-save') {
+        if (!file || !allowed[file.type]) { if (message) message.textContent = 'اختر صورة JPG أو PNG أو WebP أولاً.'; return; }
+        if (file.size > 5 * 1024 * 1024) { if (message) message.textContent = 'حجم الصورة أكبر من 5 ميغابايت.'; return; }
+      } else if (!profileAvatarPath) {
+        if (message) message.textContent = 'ما في صورة شخصية لإزالتها.';
+        return;
+      }
+      const oldPath = profileAvatarPath;
+      if (saveButton) { saveButton.disabled = true; saveButton.textContent = target.id === 'profile-avatar-save' ? 'جارٍ رفع الصورة…' : 'جارٍ التحديث…'; }
+      if (removeButton) removeButton.disabled = true;
+      try {
+        let nextPath = null;
+        if (target.id === 'profile-avatar-save') {
+          const id = window.crypto?.randomUUID?.();
+          if (!id) throw new Error('Secure random IDs unavailable');
+          nextPath = user.id + '/avatars/' + id + '.' + allowed[file.type];
+          const {error: uploadError} = await supabase.storage.from('photo-originals').upload(nextPath, file, {contentType:file.type,upsert:false,cacheControl:'3600'});
+          if (uploadError) throw uploadError;
+        }
+        const {error: updateError} = await supabase.from('profiles').update({avatar_path:nextPath}).eq('id',user.id);
+        if (updateError) {
+          if (nextPath) await supabase.storage.from('photo-originals').remove([nextPath]);
+          throw updateError;
+        }
+        profileAvatarPath = nextPath;
+        if (preview) {
+          if (nextPath) {
+            const {data: signed, error: signedError} = await supabase.storage.from('photo-originals').createSignedUrl(nextPath,3600);
+            if (!signedError && signed?.signedUrl) preview.innerHTML = '<img src="' + escapeHtml(signed.signedUrl) + '" alt="الصورة الشخصية الحالية">';
+          } else {
+            const initial = (document.getElementById('profile-display-name')?.value || user.email || 'م').trim().slice(0,1).toUpperCase();
+            preview.innerHTML = '<span>' + escapeHtml(initial) + '</span>';
+          }
+        }
+        if (removeButton) removeButton.hidden = !nextPath;
+        if (oldPath && oldPath.startsWith(user.id + '/avatars/')) {
+          const {error: removeOldError} = await supabase.storage.from('photo-originals').remove([oldPath]);
+          if (removeOldError) console.warn('XLive old avatar cleanup skipped',removeOldError);
+        }
+        const fileInput = document.getElementById('profile-avatar-file');
+        if (fileInput) fileInput.value = '';
+        if (message) message.textContent = target.id === 'profile-avatar-save' ? 'تم تحديث صورتك الشخصية بنجاح.' : 'تمت إزالة الصورة الشخصية.';
+        window.XLiveApp?.showToast(target.id === 'profile-avatar-save' ? 'تم حفظ الصورة الشخصية.' : 'تمت إزالة الصورة الشخصية.');
+      } catch (error) {
+        if (message) message.textContent = 'تعذر تحديث الصورة الشخصية. تحقق من الاتصال والصلاحيات وحاول مجدداً.';
+        console.error('XLive avatar update failed',error);
+      } finally {
+        if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'حفظ الصورة'; }
+        if (removeButton) removeButton.disabled = false;
+      }
+      return;
+    }
     if (target.id === 'profile-save') {
       event.preventDefault();
       const form = document.getElementById('profile-form');
