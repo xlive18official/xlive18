@@ -49,6 +49,7 @@ async function render(){
 document.addEventListener('click',async e=>{
  const nav=e.target.closest('#admin-nav,#admin-mobile-nav,[data-view="admin"]');
  if(nav){e.preventDefault();e.stopImmediatePropagation();if(!root){notify('تعذر فتح لوحة الإدارة: عنصر الصفحة غير موجود.');return}if(!window.XLIVE_SUPABASE||!window.supabase?.createClient){root.innerHTML='<div class="view-header"><h1>لوحة الإدارة</h1></div><div class="simple-panel"><h3>تعذر الاتصال بخدمة الإدارة</h3><p>تحقق من تحميل إعدادات Supabase ثم أعد تحميل الصفحة.</p></div>';return}await render();return}
+ if(e.target.closest('[data-private-action="close"]')){root.querySelector('[data-private-viewer]')?.remove();return}
  const privateAction=e.target.closest('[data-private-action]');
  if(privateAction){
   e.preventDefault();e.stopImmediatePropagation();
@@ -72,7 +73,6 @@ document.addEventListener('click',async e=>{
   root.insertAdjacentHTML('beforeend','<div data-private-viewer role="dialog" aria-modal="true" aria-label="عرض محتوى خاص" style="position:fixed;inset:0;z-index:10000;background:#000d;display:flex;align-items:center;justify-content:center;padding:16px"><div class="simple-panel" style="width:min(760px,100%);max-height:90vh;overflow:auto;text-align:center"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2>'+esc(item.title||'محتوى خاص')+'</h2><button class="button button-secondary" data-private-action="close">إغلاق</button></div><p>معاينة إدارية خاصة — لا تجعل الملف عاماً أو تشارك رابطه.</p>'+media+'</div></div>');
   return;
  }
- if(e.target.closest('[data-private-action="close"]')){root.querySelector('[data-private-viewer]')?.remove();return}
  const b=e.target.closest('[data-admin-action]');if(!b)return;
  e.preventDefault();e.stopImmediatePropagation();
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
