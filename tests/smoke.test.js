@@ -306,8 +306,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-35'));
-  assert.ok(html.includes('app.js?v=20261012-35'));
+  assert.ok(html.includes('styles.css?v=20261012-36'));
+  assert.ok(html.includes('app.js?v=20261012-36'));
 });
 
 
@@ -358,6 +358,6 @@ test('moderation result notifications satisfy the database kind constraint', () 
 test('admin feedback is shown in the site instead of browser alert dialogs', () => {
   const admin = readFileSync('admin.js', 'utf8');
   assert.match(admin, /function notify\(message\)/);
-  assert.match(admin, /window\.XLiveApp\?\.showToast\(message\)/);
+  assert.match(admin, /window\.XLiveApp\.showToast\(message\)/);
   assert.doesNotMatch(admin, /alert\('تعذر تحديث المنشور:/);
 });
