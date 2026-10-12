@@ -481,3 +481,15 @@ img, video, iframe, canvas, svg {
  body.mobile-menu-open .sidebar-bottom .nav-item{min-height:32px;padding:7px 6px;font-size:11px;border-radius:8px;gap:6px}
  body.mobile-menu-open .sidebar-bottom .nav-icon{font-size:13px}
 }
+
+
+/* Per-video visibility controls on the creator profile */
+.creator-media-grid .clip-card-body{position:relative;padding-top:34px}
+.creator-clip-settings{position:absolute;top:6px;left:6px;z-index:8}
+.creator-clip-menu-button{display:grid;place-items:center;width:29px;height:29px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);font-size:1.35rem;line-height:1;cursor:pointer}
+.creator-clip-menu{position:absolute;top:33px;left:0;width:min(205px,75vw);padding:8px;border:1px solid var(--line);border-radius:11px;background:var(--panel);box-shadow:0 12px 30px #0008;display:grid;gap:4px}
+.creator-clip-menu[hidden]{display:none}
+.creator-clip-menu p{margin:2px 5px 5px;color:var(--muted);font-size:.75rem}
+.creator-clip-menu button{width:100%;text-align:right;border:0;border-radius:7px;padding:9px 8px;background:transparent;color:var(--text);font-size:.8rem;cursor:pointer}
+.creator-clip-menu button:hover,.creator-clip-menu button[aria-current="true"]{background:var(--panel2);outline:1px solid var(--line)}
+.creator-clip-menu button[aria-current="true"]::after{content:' ✓';color:var(--accent,#f04452);font-weight:700}
