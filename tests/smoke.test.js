@@ -347,3 +347,17 @@ test('creator page is available from the bottom navigation and has media tabs', 
   assert.match(auth, /creator-live-form/);
   assert.match(auth, /creator-photo-upload-form/);
 });
+
+
+test('moderation result notifications satisfy the database kind constraint', () => {
+  const migration = readFileSync('supabase/migrations/0024_allow_moderation_result_notifications.sql', 'utf8');
+  assert.match(migration, /notifications_kind_check/i);
+  assert.match(migration, /'moderation_result'/i);
+});
+
+test('admin feedback is shown in the site instead of browser alert dialogs', () => {
+  const admin = readFileSync('admin.js', 'utf8');
+  assert.match(admin, /function notify\(message\)/);
+  assert.match(admin, /window\.XLiveApp\?\.showToast\(message\)/);
+  assert.doesNotMatch(admin, /alert\('تعذر تحديث المنشور:/);
+});
