@@ -42,6 +42,15 @@ test('search is handled without injecting raw user input as HTML', () => {
   assert.match(auth, /escapeHtml\(/);
 });
 
+test('admin destructive actions use in-site dialogs rather than browser prompts', () => {
+  assert.match(admin, /function siteDialog\(/);
+  assert.match(admin, /admin-dialog-backdrop/);
+  assert.doesNotMatch(admin, /\\bconfirm\(/);
+  assert.doesNotMatch(admin, /\\bprompt\(/);
+  assert.match(css, /\.admin-dialog-backdrop/);
+  assert.match(admin, /data-private-action="close"/);
+});
+
 test('responsive layout and reduced-motion preferences exist', () => {
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /prefers-reduced-motion:reduce/);
@@ -323,8 +332,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-42'));
-  assert.ok(html.includes('app.js?v=20261012-42'));
+  assert.ok(html.includes('styles.css?v=20261012-43'));
+  assert.ok(html.includes('app.js?v=20261012-43'));
 });
 
 
