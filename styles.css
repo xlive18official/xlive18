@@ -458,9 +458,11 @@ img, video, iframe, canvas, svg {
 }
 
 
-/* The sidebar is for account actions only; navigation lives in the mobile bar / app views. */
-.sidebar-label,.sidebar-note,.sidebar>.nav-item[data-view="editor"],.sidebar .nav-list{display:none!important}
+/* Account shortcuts live in the sidebar; keep only core destinations in the mobile bottom bar. */
+.sidebar-label,.sidebar-note,.sidebar>.nav-item[data-view="editor"]{display:none!important}
 .sidebar{justify-content:flex-start}
+.sidebar .nav-list{display:grid;gap:5px;width:100%;margin-top:14px}
+.sidebar .nav-list .nav-item{justify-content:flex-start}
 .sidebar-bottom{margin-top:auto;display:grid;gap:8px}
 .sidebar-bottom .nav-item{justify-content:flex-start}
 
@@ -472,14 +474,17 @@ img, video, iframe, canvas, svg {
 .sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin-bottom:12px}
 .sidebar-close{display:none;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border:1px solid var(--line,rgba(255,255,255,.14));border-radius:9px;background:rgba(255,255,255,.05);color:inherit;font-size:20px;line-height:1;cursor:pointer}
 @media(max-width:760px){
- body.mobile-menu-open .sidebar{inset-block:auto!important;top:25dvh!important;bottom:auto!important;inset-inline-start:8px;width:min(145px,36vw)!important;height:50dvh!important;max-height:50dvh;min-height:0;overflow-y:auto;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:9px 7px 8px;gap:6px;box-shadow:0 12px 30px #0008;backdrop-filter:blur(18px)}
+ body.mobile-menu-open .sidebar{inset-block:auto!important;top:16dvh!important;bottom:auto!important;inset-inline-start:8px;width:min(245px,72vw)!important;height:68dvh!important;max-height:68dvh;min-height:0;overflow-y:auto;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:11px 9px 10px;gap:8px;box-shadow:0 12px 30px #0008;backdrop-filter:blur(18px)}
  body.mobile-menu-open .sidebar-heading{margin-bottom:6px;gap:5px}
  body.mobile-menu-open .sidebar-close{display:flex;width:27px;height:27px;flex-basis:27px;font-size:17px;border-radius:8px}
- body.mobile-menu-open .sidebar .brand{font-size:11px;gap:5px}
- body.mobile-menu-open .sidebar .brand-mark{width:23px;height:23px;font-size:12px}
+ body.mobile-menu-open .sidebar .brand{font-size:14px;gap:6px}
+ body.mobile-menu-open .sidebar .brand-mark{width:28px;height:28px;font-size:16px}
+ body.mobile-menu-open .sidebar .nav-list{gap:5px;margin-top:8px}
+ body.mobile-menu-open .sidebar .nav-list .nav-item{min-height:38px;padding:8px 9px;font-size:12px;border-radius:8px;gap:8px}
+ body.mobile-menu-open .sidebar .nav-list .nav-icon{font-size:16px}
  body.mobile-menu-open .sidebar-bottom{gap:5px}
- body.mobile-menu-open .sidebar-bottom .nav-item{min-height:32px;padding:7px 6px;font-size:11px;border-radius:8px;gap:6px}
- body.mobile-menu-open .sidebar-bottom .nav-icon{font-size:13px}
+ body.mobile-menu-open .sidebar-bottom .nav-item{min-height:36px;padding:8px 9px;font-size:12px;border-radius:8px;gap:8px}
+ body.mobile-menu-open .sidebar-bottom .nav-icon{font-size:15px}
 }
 
 
