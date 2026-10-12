@@ -306,8 +306,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-36'));
-  assert.ok(html.includes('app.js?v=20261012-36'));
+  assert.ok(html.includes('styles.css?v=20261012-37'));
+  assert.ok(html.includes('app.js?v=20261012-37'));
 });
 
 
@@ -360,4 +360,21 @@ test('admin feedback is shown in the site instead of browser alert dialogs', () 
   assert.match(admin, /function notify\(message\)/);
   assert.match(admin, /window\.XLiveApp\.showToast\(message\)/);
   assert.doesNotMatch(admin, /alert\('تعذر تحديث المنشور:/);
+});
+
+
+test('creator video cards offer owner-only visibility settings', () => {
+  assert.match(auth, /data-video-menu=/);
+  assert.match(auth, /data-video-visibility="public"/);
+  assert.match(auth, /data-video-visibility="private"/);
+  assert.match(auth, /data-video-visibility="profile"/);
+  assert.match(auth, /set_own_video_visibility/);
+  assert.match(auth, /if \(!isOwnProfile\) query = query\.eq\('status','approved'\)\.in\('visibility',\['public','profile'\]\)/);
+});
+
+test('video visibility RPC is restricted to the authenticated owner', () => {
+  const migration = readFileSync('supabase/migrations/0025_owner_video_visibility_settings.sql', 'utf8');
+  assert.match(migration, /security definer/i);
+  assert.match(migration, /owner_id = auth\.uid\(\)/i);
+  assert.match(migration, /grant execute on function public\.set_own_video_visibility\(uuid, text\) to authenticated/i);
 });
