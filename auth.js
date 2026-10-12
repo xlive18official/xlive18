@@ -136,7 +136,7 @@
           media = '<div class="private-video-preview" aria-label="مقطع خاص">' + previewMarkup + '<span class="private-video-lock">🔒</span><strong>خاص</strong></div>';
         }
         const status = v.status === 'approved' ? (v.visibility === 'private' ? 'خاص' : v.visibility === 'profile' ? 'الملف الشخصي فقط' : 'منشور') : v.status === 'rejected' ? 'مرفوض' : v.status === 'removed' ? 'محذوف' : 'قيد المراجعة';
-        return '<article class="clip-card ' + (locked ? 'clip-card-private' : '') + '">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div>' + (locked ? '<p>هذا المقطع خاص ولا يمكن تشغيله.</p>' : '<p>' + escapeHtml(v.description || '') + '</p>') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
+        return '<article class="clip-card ' + (locked ? 'clip-card-private' : '') + '">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div>' + (isOwnProfile ? '<div class="creator-clip-settings"><button type="button" class="creator-clip-menu-button" data-video-menu="' + v.id + '" aria-label="تخصيص ظهور المقطع" aria-expanded="false">⋮</button><div class="creator-clip-menu" data-video-menu-panel="' + v.id + '" hidden><p>مكان ظهور المقطع</p><button type="button" data-video-visibility="public" data-video-id="' + v.id + '" ' + (v.visibility === 'public' ? 'aria-current="true"' : '') + '>🌐 عام</button><button type="button" data-video-visibility="private" data-video-id="' + v.id + '" ' + (v.visibility === 'private' ? 'aria-current="true"' : '') + '>🔒 خاص</button><button type="button" data-video-visibility="profile" data-video-id="' + v.id + '" ' + (v.visibility === 'profile' ? 'aria-current="true"' : '') + '>◎ الصفحة الشخصية فقط</button></div></div>' : '') + (locked ? '<p>هذا المقطع خاص ولا يمكن تشغيله.</p>' : '<p>' + escapeHtml(v.description || '') + '</p>') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
       panel.innerHTML = '<div class="creator-panel-heading"><div><h3>' + (isOwnProfile ? 'مقاطعك' : 'المقاطع') + '</h3><p>' + (isOwnProfile ? 'اختر مكان ظهور كل مقطع؛ النشر للعامة يتطلب الموافقة.' : 'المقاطع العامة ومقاطع الملف الشخصي تظهر بعد الموافقة. المقاطع الخاصة تظهر بقفل فقط.') + '</p></div>' + (isOwnProfile ? '<button class="button button-primary creator-plus" type="button" data-creator-upload="video" aria-label="إضافة مقطع">＋ إضافة مقطع</button>' : '') + '</div>' +
         (isOwnProfile && creatorUploadOpen ? '<form id="creator-video-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-video-title">عنوان المقطع</label><input id="creator-video-title" maxlength="120" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3"></textarea></div><fieldset class="field visibility-options"><legend>مين بيقدر يشوف المقطع؟</legend><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="public" checked><span class="visibility-check" aria-hidden="true"></span><span><strong>المقطع عام</strong><small>بيظهر بالصفحة الرئيسية وبالملف الشخصي بعد الموافقة.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="private"><span class="visibility-check" aria-hidden="true"></span><span><strong>خاص</strong><small>أنت فقط بتقدر تشغّله؛ بيظهر للزوار كعنصر مقفول.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="profile"><span class="visibility-check" aria-hidden="true"></span><span><strong>فقط بالملف الشخصي</strong><small>بيظهر بملفك بعد الموافقة، وما بيظهر بالرئيسية.</small></span></label></fieldset><div class="field"><label for="creator-video-file">ملف الفيديو</label><input id="creator-video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p></div><button class="button button-primary" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
@@ -157,6 +157,39 @@
   }
 
   document.addEventListener('click', async event => {
+    const menuButton = event.target.closest('[data-video-menu]');
+    if (menuButton) {
+      event.preventDefault();
+      const id = menuButton.dataset.videoMenu;
+      const menu = root.querySelector('[data-video-menu-panel="' + id + '"]');
+      if (menu) {
+        const opening = menu.hidden;
+        root.querySelectorAll('[data-video-menu-panel]').forEach(node => { node.hidden = true; });
+        root.querySelectorAll('[data-video-menu]').forEach(node => node.setAttribute('aria-expanded', 'false'));
+        menu.hidden = !opening;
+        menuButton.setAttribute('aria-expanded', String(opening));
+      }
+      return;
+    }
+    const visibilityButton = event.target.closest('[data-video-visibility]');
+    if (visibilityButton) {
+      event.preventDefault();
+      const supabase = ensureClient(); await syncCurrentUser(supabase);
+      if (!supabase || !user || creatorProfileTarget !== user.id) { window.XLiveApp?.showToast('يمكن لصاحب المقطع فقط تعديل ظهوره.'); return; }
+      const visibility = visibilityButton.dataset.videoVisibility;
+      visibilityButton.disabled = true;
+      const {error} = await supabase.rpc('set_own_video_visibility', {p_video_id:visibilityButton.dataset.videoId,p_visibility:visibility});
+      if (error) {
+        window.XLiveApp?.showToast('تعذر تعديل ظهور المقطع. حاول مجدداً.');
+        console.error('XLive video visibility update failed', error);
+        visibilityButton.disabled = false;
+        return;
+      }
+      creatorUploadOpen = false;
+      await renderCreatorProfile('videos', user.id);
+      window.XLiveApp?.showToast(({public:'أصبح المقطع عاماً بعد اجتياز المراجعة.',private:'أصبح المقطع خاصاً بصاحبه.',profile:'سيظهر المقطع في الصفحة الشخصية فقط بعد الموافقة.'})[visibility] || 'تم حفظ إعداد الظهور.');
+      return;
+    }
     const tab = event.target.closest('[data-creator-tab]');
     if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab, creatorProfileTarget || user?.id); }
     const upload = event.target.closest('[data-creator-upload]');
