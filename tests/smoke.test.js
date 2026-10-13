@@ -350,9 +350,10 @@ test('auth session callbacks cannot replace homepage with the profile screen', (
 });
 
 
-test('application starts on the homepage instead of briefly showing the profile screen', () => {
-  assert.match(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('home'\);\s*\}\)\(\);/);
-  assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('profile'\);/);
+test('application restores the current route on startup instead of always forcing the homepage', () => {
+  assert.match(app, /window\.XLiveApp = \{ render, showToast, navigate \};/);
+  assert.match(app, /const initialRoute = readRoute\(\);\s*showRoute\(initialRoute\.view, initialRoute\.extra\);\s*\}\)\(\);/);
+  assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast, navigate \};\s*render\('home'\);/);
 });
 
 
