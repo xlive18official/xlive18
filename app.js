@@ -50,6 +50,46 @@
     return '<div class="empty-panel"><div class="empty-symbol" aria-hidden="true">✦</div><h3>' + title + '</h3><p>' + message + '</p><span class="status-pill"><span class="status-dot"></span> بانتظار تنفيذ وربط الخدمة</span></div>';
   }
 
+  // Keep the current SPA view in the URL so refresh and browser history restore it.
+  function routeHash(view, extra = '') {
+    const base = '#view/' + encodeURIComponent(view);
+    return extra ? base + '/' + encodeURIComponent(extra) : base;
+  }
+
+  function readRoute() {
+    const raw = window.location.hash || '';
+    if (raw === '#home' || raw === '#' || !raw) return { view: 'home', extra: '' };
+    const parts = raw.slice(1).split('/');
+    if (parts[0] !== 'view' || !parts[1]) return { view: 'home', extra: '' };
+    try {
+      return {
+        view: decodeURIComponent(parts[1]),
+        extra: parts.length > 2 ? decodeURIComponent(parts.slice(2).join('/')) : ''
+      };
+    } catch (_) {
+      return { view: 'home', extra: '' };
+    }
+  }
+
+  function showRoute(view, extra = '', scroll = false) {
+    // Preserve the existing sign-in gate when a protected view is opened directly.
+    if (view !== 'profile' && view !== 'home' && !window.XLiveAuth?.getUser()) {
+      view = 'profile';
+      extra = '';
+    }
+    render(view, extra);
+    if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function navigate(view, extra = '') {
+    const hash = routeHash(view, extra);
+    if (window.location.hash !== hash) {
+      window.location.hash = hash;
+    } else {
+      showRoute(view, extra, true);
+    }
+  }
+
   function render(view, extra = '') {
     if (view === 'admin') {
       if (window.XLiveAdmin?.render) { window.XLiveAdmin.render(); return; }
@@ -162,21 +202,14 @@
     if (!target) return;
     event.preventDefault();
     const requestedView = target.dataset.view;
-    if (requestedView === 'admin') {
-      render('admin');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    if (requestedView !== 'profile' && !window.XLiveAuth?.getUser()) {
-      render('profile');
+    if (requestedView !== 'profile' && requestedView !== 'home' && !window.XLiveAuth?.getUser()) {
+      navigate('profile');
       window.XLiveAuth?.render();
       showToast('أنشئ حساباً أو سجّل الدخول أولاً للوصول إلى الموقع.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    render(requestedView);
+    navigate(requestedView);
     if (requestedView === 'upload') showToast('رفع الفيديو غير متصل بالخادم بعد.');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
 
@@ -199,10 +232,14 @@
       searchInput.focus();
       return;
     }
-    render('search', query);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('search', query);
   });
 
-  window.XLiveApp = { render, showToast };
-  render('home');
+  window.XLiveApp = { render, showToast, navigate };
+  window.addEventListener('hashchange', () => {
+    const route = readRoute();
+    showRoute(route.view, route.extra);
+  });
+  const initialRoute = readRoute();
+  showRoute(initialRoute.view, initialRoute.extra);
 })();
