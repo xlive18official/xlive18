@@ -38,8 +38,16 @@ test('all navigation destinations in the HTML have a defined view', () => {
 
 test('search is handled without injecting raw user input as HTML', () => {
   assert.match(app, /searchForm\.addEventListener\('submit'/);
-  assert.match(app, /render\('search', query\)/);
+  assert.match(app, /navigate\('search', query\)/);
   assert.match(auth, /escapeHtml\(/);
+});
+
+test('the current SPA route is stored in the URL and restored after refresh', () => {
+  assert.match(app, /function routeHash\(view, extra = ''\)/);
+  assert.match(app, /function readRoute\(\)/);
+  assert.match(app, /addEventListener\('hashchange'/);
+  assert.match(app, /showRoute\(initialRoute\.view, initialRoute\.extra\)/);
+  assert.match(app, /window\.location\.hash = hash/);
 });
 
 test('admin destructive actions use in-site dialogs rather than browser prompts', () => {
