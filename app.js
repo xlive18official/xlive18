@@ -76,6 +76,8 @@
     if (view !== 'profile' && view !== 'home' && !window.XLiveAuth?.getUser()) {
       view = 'profile';
       extra = '';
+      const profileHash = routeHash('profile');
+      if (window.location.hash !== profileHash) window.location.hash = profileHash;
     }
     render(view, extra);
     if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
