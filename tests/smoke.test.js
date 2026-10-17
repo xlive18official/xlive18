@@ -355,6 +355,7 @@ test('auth session restoration preserves the URL-selected route until authentica
   assert.match(auth, /let authReady = false;/);
   assert.match(auth, /if \(event !== 'INITIAL_SESSION'\) authReady = true;/);
   assert.match(auth, /isReady: \(\) => authReady/);
+  assert.match(auth, /action === 'view-profile'\) \{ window\.XLiveApp\?\.navigate\('creator', targetId\)/);
   assert.match(auth, /window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
   assert.doesNotMatch(auth, /getSession\(\)[\s\S]{0,700}window\.XLiveApp\?\.render\('home'\)/);
   assert.doesNotMatch(auth, /event === 'SIGNED_IN'[\s\S]{0,300}window\.XLiveApp\?\.render\('home'\)/);
