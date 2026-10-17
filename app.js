@@ -72,15 +72,24 @@
   }
 
   function showRoute(view, extra = '', scroll = false) {
-    // Preserve the existing sign-in gate when a protected view is opened directly.
-    if (view !== 'profile' && view !== 'home' && !window.XLiveAuth?.getUser()) {
-      view = 'profile';
-      extra = '';
-      const profileHash = routeHash('profile');
-      if (window.location.hash !== profileHash) window.location.hash = profileHash;
+    // Wait for auth.js and the persisted session before deciding whether a protected route is allowed.
+    if (view !== 'profile' && view !== 'home') {
+      if (!window.XLiveAuth) return;
+      if (window.XLiveAuth.isReady && !window.XLiveAuth.isReady()) return;
+      if (!window.XLiveAuth.getUser()) {
+        view = 'profile';
+        extra = '';
+        const profileHash = routeHash('profile');
+        if (window.location.hash !== profileHash) window.location.hash = profileHash;
+      }
     }
     render(view, extra);
     if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function restoreCurrentRoute() {
+    const route = readRoute();
+    showRoute(route.view, route.extra);
   }
 
   function navigate(view, extra = '') {
@@ -237,7 +246,7 @@
     navigate('search', query);
   });
 
-  window.XLiveApp = { render, showToast, navigate };
+  window.XLiveApp = { render, showToast, navigate, restoreCurrentRoute };
   window.addEventListener('hashchange', () => {
     const route = readRoute();
     showRoute(route.view, route.extra);
