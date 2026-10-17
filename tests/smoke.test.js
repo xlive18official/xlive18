@@ -39,6 +39,7 @@ test('all navigation destinations in the HTML have a defined view', () => {
 test('search is handled without injecting raw user input as HTML', () => {
   assert.match(app, /searchForm\.addEventListener\('submit'/);
   assert.match(app, /navigate\('search', query\)/);
+  assert.match(app, /if \(!window\.XLiveAuth\?\.getUser\(\)\) \{\s*navigate\('profile'\);/);
   assert.match(auth, /escapeHtml\(/);
 });
 
