@@ -340,8 +340,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-46'));
-  assert.ok(html.includes('app.js?v=20261012-46'));
+  assert.ok(html.includes('styles.css?v=20261017-47'));
+  assert.ok(html.includes('app.js?v=20261017-47'));
 });
 
 
@@ -349,6 +349,18 @@ test('auth session callbacks cannot replace homepage with the profile screen', (
   assert.match(auth, /async function renderProfile\(\)[\s\S]*?Auth session callbacks may finish while the user is on another page[\s\S]*?matches\('\[data-view="profile"\]'\)\) return;/);
 });
 
+
+
+test('auth session restoration preserves the URL-selected route until authentication is ready', () => {
+  assert.match(auth, /let authReady = false;/);
+  assert.match(auth, /isReady: \(\) => authReady/);
+  assert.match(auth, /window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
+  assert.doesNotMatch(auth, /getSession\(\)[\s\S]{0,700}window\.XLiveApp\?\.render\('home'\)/);
+  assert.doesNotMatch(auth, /event === 'SIGNED_IN'[\s\S]{0,300}window\.XLiveApp\?\.render\('home'\)/);
+  assert.match(app, /if \(!window\.XLiveAuth\) return;/);
+  assert.match(app, /restoreCurrentRoute\(\)/);
+  assert.match(auth, /window\.XLiveApp\?\.navigate\('home'\)/);
+});
 
 test('application restores the current route on startup instead of always forcing the homepage', () => {
   assert.match(app, /window\.XLiveApp = \{ render, showToast, navigate \};/);
