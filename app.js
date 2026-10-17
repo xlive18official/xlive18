@@ -232,8 +232,7 @@
   searchForm.addEventListener('submit', event => {
     event.preventDefault();
     if (!window.XLiveAuth?.getUser()) {
-      render('profile');
-      window.XLiveAuth?.render();
+      navigate('profile');
       showToast('سجّل الدخول أولاً لاستخدام البحث.');
       return;
     }
