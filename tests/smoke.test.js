@@ -38,8 +38,17 @@ test('all navigation destinations in the HTML have a defined view', () => {
 
 test('search is handled without injecting raw user input as HTML', () => {
   assert.match(app, /searchForm\.addEventListener\('submit'/);
-  assert.match(app, /render\('search', query\)/);
+  assert.match(app, /navigate\('search', query\)/);
+  assert.match(app, /if \(!window\.XLiveAuth\?\.getUser\(\)\) \{\s*navigate\('profile'\);/);
   assert.match(auth, /escapeHtml\(/);
+});
+
+test('the current SPA route is stored in the URL and restored after refresh', () => {
+  assert.match(app, /function routeHash\(view, extra = ''\)/);
+  assert.match(app, /function readRoute\(\)/);
+  assert.match(app, /addEventListener\('hashchange'/);
+  assert.match(app, /showRoute\(initialRoute\.view, initialRoute\.extra\)/);
+  assert.match(app, /window\.location\.hash = hash/);
 });
 
 test('admin destructive actions use in-site dialogs rather than browser prompts', () => {
@@ -332,8 +341,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261012-46'));
-  assert.ok(html.includes('app.js?v=20261012-46'));
+  assert.ok(html.includes('styles.css?v=20261017-47'));
+  assert.ok(html.includes('app.js?v=20261017-47'));
 });
 
 
@@ -342,9 +351,24 @@ test('auth session callbacks cannot replace homepage with the profile screen', (
 });
 
 
-test('application starts on the homepage instead of briefly showing the profile screen', () => {
-  assert.match(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('home'\);\s*\}\)\(\);/);
-  assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast \};\s*render\('profile'\);/);
+
+test('auth session restoration preserves the URL-selected route until authentication is ready', () => {
+  assert.match(auth, /let authReady = false;/);
+  assert.match(auth, /if \(event !== 'INITIAL_SESSION'\) authReady = true;/);
+  assert.match(auth, /isReady: \(\) => authReady/);
+  assert.match(auth, /action === 'view-profile'\) \{ window\.XLiveApp\?\.navigate\('creator', targetId\)/);
+  assert.match(auth, /window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
+  assert.doesNotMatch(auth, /getSession\(\)[\s\S]{0,700}window\.XLiveApp\?\.render\('home'\)/);
+  assert.doesNotMatch(auth, /event === 'SIGNED_IN'[\s\S]{0,300}window\.XLiveApp\?\.render\('home'\)/);
+  assert.match(app, /if \(!window\.XLiveAuth\) return;/);
+  assert.match(app, /restoreCurrentRoute\(\)/);
+  assert.match(auth, /window\.XLiveApp\?\.navigate\('home'\)/);
+});
+
+test('application restores the current route on startup instead of always forcing the homepage', () => {
+  assert.match(app, /window\.XLiveApp = \{ render, showToast, navigate, restoreCurrentRoute \};/);
+  assert.match(app, /const initialRoute = readRoute\(\);\s*showRoute\(initialRoute\.view, initialRoute\.extra\);\s*\}\)\(\);/);
+  assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast, navigate \};\s*render\('home'\);/);
 });
 
 

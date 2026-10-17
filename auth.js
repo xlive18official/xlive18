@@ -6,6 +6,7 @@
   let client = null;
   let mode = 'signin';
   let user = null;
+  let authReady = false;
   let subscription = null;
   let activeConversationId = null;
   let passwordRecoveryActive = false;
@@ -252,8 +253,36 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => { user = data?.session?.user || null; const signoutButton = document.getElementById('auth-signout'); if (signoutButton) signoutButton.hidden = !user; if (passwordRecoveryActive) return; if (user) { document.body.classList.remove('auth-only'); window.XLiveApp?.render('home'); } else renderProfile(); }).catch(() => {});
-    const result = client.auth.onAuthStateChange((event, session) => { user = session?.user || null; const signoutButton = document.getElementById('auth-signout'); if (signoutButton) signoutButton.hidden = !user; if (event === 'PASSWORD_RECOVERY') renderPasswordRecovery(); else if (!passwordRecoveryActive && event === 'SIGNED_IN' && user) { document.body.classList.remove('auth-only'); window.XLiveApp?.render('home'); } else if (!passwordRecoveryActive) { if (!user) { document.body.classList.add('auth-only'); window.XLiveApp?.render('profile'); } else renderProfile(); } });
+    client.auth.getSession().then(({data}) => {
+      user = data?.session?.user || null;
+      authReady = true;
+      const signoutButton = document.getElementById('auth-signout');
+      if (signoutButton) signoutButton.hidden = !user;
+      if (passwordRecoveryActive) return;
+      if (user) document.body.classList.remove('auth-only');
+      // Re-evaluate the URL after the session is known; never force the homepage here.
+      window.XLiveApp?.restoreCurrentRoute();
+    }).catch(() => {
+      authReady = true;
+      window.XLiveApp?.restoreCurrentRoute();
+    });
+    const result = client.auth.onAuthStateChange((event, session) => {
+      user = session?.user || null;
+      // INITIAL_SESSION can arrive before getSession() settles; keep protected routes gated until then.
+      if (event !== 'INITIAL_SESSION') authReady = true;
+      const signoutButton = document.getElementById('auth-signout');
+      if (signoutButton) signoutButton.hidden = !user;
+      if (event === 'PASSWORD_RECOVERY') { renderPasswordRecovery(); return; }
+      if (passwordRecoveryActive) return;
+      if (event === 'SIGNED_OUT') {
+        document.body.classList.add('auth-only');
+        window.XLiveApp?.navigate('profile');
+        return;
+      }
+      if (user) document.body.classList.remove('auth-only');
+      // INITIAL_SESSION and SIGNED_IN must not replace the URL-selected page.
+      window.XLiveApp?.restoreCurrentRoute();
+    });
     subscription = result?.data?.subscription || null;
     return client;
   }
@@ -515,12 +544,12 @@
         const displayName = document.getElementById('auth-name').value.trim();
         const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true}}});
         if (error) throw error;
-        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.render('home'); } else { feedback('تم إنشاء الحساب، لكن لم تبدأ جلسة الدخول تلقائياً. تأكد من تعطيل تأكيد البريد في إعدادات Supabase ثم حاول مجدداً.'); }
+        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.navigate('home'); } else { feedback('تم إنشاء الحساب، لكن لم تبدأ جلسة الدخول تلقائياً. تأكد من تعطيل تأكيد البريد في إعدادات Supabase ثم حاول مجدداً.'); }
       } else {
         const {error} = await supabase.auth.signInWithPassword({email,password});
         if (error) throw error;
         feedback('تم تسجيل الدخول.');
-        window.XLiveApp?.render('home');
+        window.XLiveApp?.navigate('home');
       }
     } catch (error) {
       const message = String(error?.message || '');
@@ -927,7 +956,7 @@
     const supabase = ensureClient();
     if (!supabase || !user) { messageSocial('سجّل الدخول أولاً لتنفيذ هذا الإجراء.'); return; }
     try {
-      if (action === 'view-profile') { window.XLiveApp?.render('creator', targetId); return; }
+      if (action === 'view-profile') { window.XLiveApp?.navigate('creator', targetId); return; }
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
       if (action === 'save-video') result = await supabase.from('saved_videos').insert({user_id:user.id,video_id:targetId});
@@ -989,7 +1018,11 @@
     handleSocialAction(button.dataset.socialAction, button.dataset.userId || button.dataset.notificationId || button.dataset.videoId || button.dataset.roomId || button.dataset.reportId || button.dataset.messageId);
   });
 
+  window.XLiveAuth = { getClient: () => client, render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, renderCreatorProfile, getUser: () => user, isReady: () => authReady, cleanup: () => { subscription?.unsubscribe(); if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop()); } };
   if (window.supabase && config) ensureClient();
-  window.XLiveAuth = { getClient: () => client, render: renderProfile, renderSearch, renderMessages, renderNotifications, renderClips, renderSaved, renderUpload, renderRooms, renderLive, renderSettings, renderHomeFeed, renderCreatorProfile, getUser: () => user, cleanup: () => { subscription?.unsubscribe(); if (creatorCameraStream) creatorCameraStream.getTracks().forEach(track => track.stop()); } };
+  else {
+    authReady = true;
+    window.XLiveApp?.restoreCurrentRoute();
+  }
   if (document.getElementById('home-feed')) renderHomeFeed();
 })();
