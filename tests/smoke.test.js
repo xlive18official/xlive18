@@ -353,7 +353,7 @@ test('auth session callbacks cannot replace homepage with the profile screen', (
 
 test('auth session restoration preserves the URL-selected route until authentication is ready', () => {
   assert.match(auth, /let authReady = false;/);
-  assert.match(auth, /if \\(event !== 'INITIAL_SESSION'\\) authReady = true;/);
+  assert.match(auth, /if \(event !== 'INITIAL_SESSION'\) authReady = true;/);
   assert.match(auth, /isReady: \(\) => authReady/);
   assert.match(auth, /window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
   assert.doesNotMatch(auth, /getSession\(\)[\s\S]{0,700}window\.XLiveApp\?\.render\('home'\)/);
