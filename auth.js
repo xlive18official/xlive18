@@ -956,7 +956,7 @@
     const supabase = ensureClient();
     if (!supabase || !user) { messageSocial('سجّل الدخول أولاً لتنفيذ هذا الإجراء.'); return; }
     try {
-      if (action === 'view-profile') { window.XLiveApp?.render('creator', targetId); return; }
+      if (action === 'view-profile') { window.XLiveApp?.navigate('creator', targetId); return; }
       if (action === 'message') { activeConversationId = targetId; await renderMessages(targetId); return; }
       let result;
       if (action === 'save-video') result = await supabase.from('saved_videos').insert({user_id:user.id,video_id:targetId});
