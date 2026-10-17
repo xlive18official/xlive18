@@ -268,7 +268,8 @@
     });
     const result = client.auth.onAuthStateChange((event, session) => {
       user = session?.user || null;
-      authReady = true;
+      // INITIAL_SESSION can arrive before getSession() settles; keep protected routes gated until then.
+      if (event !== 'INITIAL_SESSION') authReady = true;
       const signoutButton = document.getElementById('auth-signout');
       if (signoutButton) signoutButton.hidden = !user;
       if (event === 'PASSWORD_RECOVERY') { renderPasswordRecovery(); return; }
