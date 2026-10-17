@@ -363,7 +363,7 @@ test('auth session restoration preserves the URL-selected route until authentica
 });
 
 test('application restores the current route on startup instead of always forcing the homepage', () => {
-  assert.match(app, /window\.XLiveApp = \{ render, showToast, navigate \};/);
+  assert.match(app, /window\.XLiveApp = \{ render, showToast, navigate, restoreCurrentRoute \};/);
   assert.match(app, /const initialRoute = readRoute\(\);\s*showRoute\(initialRoute\.view, initialRoute\.extra\);\s*\}\)\(\);/);
   assert.doesNotMatch(app, /window\.XLiveApp = \{ render, showToast, navigate \};\s*render\('home'\);/);
 });
