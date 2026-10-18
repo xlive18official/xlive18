@@ -6,7 +6,8 @@
   "scripts": {
     "check:js": "node --check app.js && node --check auth.js && node --check site-editor.js && node --check supabase-config.js",
     "test": "node --test tests/*.test.js",
-    "build:cloudflare": "node scripts/prepare-cloudflare.mjs"
+    "build:cloudflare": "node scripts/prepare-cloudflare.mjs",
+    "postinstall": "npm run build:cloudflare"
   },
   "engines": {
     "node": ">=20"
