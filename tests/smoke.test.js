@@ -341,7 +341,7 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261017-47'));
+  assert.ok(html.includes('styles.css?v=20261019-01'));
   assert.ok(html.includes('app.js?v=20261017-47'));
 });
 
@@ -446,4 +446,17 @@ test('profile avatar upload persists a private storage path with public-profile 
   assert.match(avatar, /grant update \(avatar_path\) on public\.profiles to authenticated/i);
   assert.match(avatar, /photo_originals_select_profile_avatars/i);
   assert.match(avatar, /p\.id = \(select auth\.uid\(\)\) or p\.is_private = false/i);
+});
+
+
+test('external video links are admin-managed, require rights confirmation, and render only approved embeds', () => {
+  assert.match(admin, /external-video-link-form/);
+  assert.match(admin, /rights_confirmed/);
+  assert.match(admin, /status:'pending'/);
+  assert.match(admin, /data-external-action="approve"/);
+  assert.match(auth, /from\('external_video_links'\)/);
+  assert.match(auth, /\.eq\('status','approved'\)/);
+  assert.match(auth, /external-clip-player/);
+  assert.match(html, /auth.js\?v=20261019-01/);
+  assert.match(html, /admin.js\?v=20261019-01/);
 });

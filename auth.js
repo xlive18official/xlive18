@@ -858,17 +858,20 @@
         .limit(40);
       if (error) throw error;
       const videos = data || [];
-      const cards = await Promise.all(videos.map(async v => {
+      const externalResult = await supabase.from('external_video_links').select('id,title,description,source_url,embed_url,created_at').eq('status','approved').order('created_at',{ascending:false}).limit(40);
+      const externalVideos = externalResult.error ? [] : (externalResult.data || []);
+      const hostedCards = await Promise.all(videos.map(async v => {
         const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
         const src = signed?.signedUrl || '';
-        const media = src
-          ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>'
-          : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
+        const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
         return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
-      panel.innerHTML = cards.length
-        ? cards.join('')
-        : '<div class="empty-panel"><h3>لا توجد مقاطع مميزة بعد</h3><p>ستظهر هنا المقاطع العامة التي اجتازت المراجعة وأصبحت متاحة للمشاهدة.</p><span class="status-pill">بانتظار نشر أول فيديو مقبول</span></div>';
+      const externalCards = externalVideos.map(v => {
+        const media = '<div class="external-embed-wrap"><iframe class="external-clip-player" src="' + escapeHtml(v.embed_url) + '" title="' + escapeHtml(v.title) + '" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe></div>';
+        return '<article class="clip-card external-clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح المصدر الأصلي ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
+      });
+      const cards = hostedCards.concat(externalCards);
+      panel.innerHTML = cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد مقاطع مميزة بعد</h3><p>ستظهر هنا المقاطع العامة المقبولة وروابط الفيديوهات التي تمت الموافقة على تضمينها.</p><span class="status-pill">بانتظار نشر أول فيديو مقبول</span></div>';
     } catch (error) {
       panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من الاتصال ثم حاول مجدداً.</p></div>';
       console.error('XLive clips error', error);

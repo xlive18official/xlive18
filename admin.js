@@ -33,7 +33,7 @@ async function render(){
  const u=await userNow();
  document.querySelectorAll('[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view==='admin'));
  if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){root.innerHTML='<div class="view-header"><h1>الإدارة</h1></div><div class="simple-panel"><h3>غير مصرح</h3><p>هذه الصفحة مخصصة لحساب الإدارة فقط.</p></div>';return}
- root.innerHTML='<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1><p>مراجعة المنشورات وإدارة الحسابات.</p></div><button class="button button-secondary" data-admin-action="refresh">تحديث</button></div><div id="admin-stats" class="admin-stats">جارٍ تحميل الإحصاءات…</div><section class="simple-panel admin-section"><h2>المنشورات بانتظار الموافقة</h2><div id="admin-queue">جارٍ تحميل قائمة المراجعة…</div></section><section class="simple-panel admin-section"><h2>المحتوى الخاص</h2><p>المحتوى هنا لا يظهر إلا للإدارة المعتمدة. يتم تسجيل عمليات العرض والحذف.</p><div id="admin-private-content">جارٍ تحميل المحتوى الخاص…</div></section><section class="simple-panel admin-section"><h2>إدارة الحسابات</h2><p>حظر الحسابات أو إلغاء حظرها أو حذف الحساب نهائياً.</p><div id="admin-users">جارٍ تحميل الحسابات…</div></section>';
+ root.innerHTML='<div class="view-header"><div><p class="eyebrow">XLIVE 18 / ADMIN</p><h1>لوحة الإدارة</h1><p>مراجعة المنشورات وإدارة الحسابات.</p></div><button class="button button-secondary" data-admin-action="refresh">تحديث</button></div><div id="admin-stats" class="admin-stats">جارٍ تحميل الإحصاءات…</div><section class="simple-panel admin-section"><h2>المنشورات بانتظار الموافقة</h2><div id="admin-queue">جارٍ تحميل قائمة المراجعة…</div></section><section class="simple-panel admin-section"><h2>إضافة فيديو من رابط خارجي</h2><p>الفيديو يبقى لدى المصدر ولا يُنزّل إلى تخزين XLIVE18. استخدم رابط تضمين رسمي وتأكد من حقوق إعادة العرض وموافقات البالغين. الروابط الجديدة تبقى معلّقة حتى توافق عليها.</p><form id="external-video-link-form" class="form-stack"><div class="field"><label for="external-video-title">عنوان المقطع</label><input id="external-video-title" name="title" maxlength="160" required placeholder="عنوان واضح للمقطع"></div><div class="field"><label for="external-video-description">وصف (اختياري)</label><textarea id="external-video-description" name="description" maxlength="2000" rows="2" placeholder="وصف مختصر"></textarea></div><div class="field"><label for="external-video-source">رابط صفحة المصدر الأصلية (HTTPS)</label><input id="external-video-source" name="source_url" type="url" required placeholder="https://..."></div><div class="field"><label for="external-video-embed">رابط التضمين الرسمي (HTTPS)</label><input id="external-video-embed" name="embed_url" type="url" required placeholder="https://.../embed/..."></div><label class="field-help"><input type="checkbox" name="rights_confirmed" required> أؤكد أن لدي الحق في تضمين هذا الفيديو وإعادة عرضه، وأن المحتوى قانوني وموافقات البالغين موثّقة.</label><button class="button button-primary" type="submit">حفظ الرابط للمراجعة</button><p id="external-video-link-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form><div id="external-video-links-list">جارٍ تحميل الروابط…</div></section><section class="simple-panel admin-section"><h2>المحتوى الخاص</h2><p>المحتوى هنا لا يظهر إلا للإدارة المعتمدة. يتم تسجيل عمليات العرض والحذف.</p><div id="admin-private-content">جارٍ تحميل المحتوى الخاص…</div></section><section class="simple-panel admin-section"><h2>إدارة الحسابات</h2><p>حظر الحسابات أو إلغاء حظرها أو حذف الحساب نهائياً.</p><div id="admin-users">جارٍ تحميل الحسابات…</div></section>';
  const [s,q,us,privateResult]=await Promise.all([db.rpc('admin_dashboard_stats'),db.rpc('admin_moderation_queue'),db.rpc('admin_list_users'),db.rpc('admin_private_content_list')]);
  if(!document.getElementById('admin-stats'))return;
  const stats=document.getElementById('admin-stats');
@@ -59,6 +59,13 @@ async function render(){
  const users=document.getElementById('admin-users');
  if(us.error)users.innerHTML='<p>تعذر تحميل الحسابات: '+esc(us.error.message)+'</p>';
  else users.innerHTML='<div class="admin-user-list">'+(us.data||[]).map(p=>'<article class="admin-user-row"><div><strong>'+esc(p.display_name||p.username||'مستخدم')+'</strong><p>'+esc(p.email||'')+'</p><small>انضم '+date(p.created_at)+(p.banned?' · محظور':'')+'</small></div><div class="social-actions">'+(p.id===u.id?'<span class="status-pill">حسابك الإداري</span>':(p.banned?'<button class="button button-secondary" data-admin-action="unban-user" data-id="'+p.id+'">إلغاء الحظر</button>':'<button class="button button-secondary" data-admin-action="ban-user" data-id="'+p.id+'">حظر الحساب</button>')+'<button class="button button-danger" data-admin-action="delete-user" data-id="'+p.id+'">حذف الحساب</button>')+'</div></article>').join('')+'</div>';
+ const externalList=document.getElementById('external-video-links-list');
+ if(externalList){
+  const {data:links,error:linksError}=await db.from('external_video_links').select('id,title,description,source_url,embed_url,status,created_at').order('created_at',{ascending:false}).limit(100);
+  if(linksError) externalList.innerHTML='<p>تعذر تحميل روابط الفيديو: '+esc(linksError.message)+'. تأكد من تطبيق ترحيل قاعدة البيانات.</p>';
+  else externalList.innerHTML=(links||[]).length?'<div class="admin-queue-list">'+links.map(v=>'<article class="admin-queue-card"><div class="admin-item-info"><span class="status-pill">'+(v.status==='approved'?'ظاهر على الموقع':v.status==='removed'?'مزال':'بانتظار الموافقة')+'</span><h3>'+esc(v.title)+'</h3><p>'+esc(v.description||'')+'</p><small><a href="'+esc(v.source_url)+'" target="_blank" rel="noopener noreferrer">فتح المصدر الأصلي ↗</a></small><div class="social-actions">'+(v.status!=='approved'?'<button class="button button-primary" data-external-action="approve" data-id="'+v.id+'">إظهار على الموقع</button>':'<button class="button button-secondary" data-external-action="pending" data-id="'+v.id+'">إخفاء</button>')+'<button class="button button-danger" data-external-action="delete" data-id="'+v.id+'">حذف الرابط</button></div></div></article>').join('')+'</div>':'<p class="field-help">لم تُضف روابط خارجية بعد.</p>';
+ }
+
 }
 document.addEventListener('click',async e=>{
  const nav=e.target.closest('#admin-nav,#admin-mobile-nav,[data-view="admin"]');
@@ -111,5 +118,41 @@ document.addEventListener('click',async e=>{
  notify(({approve:'تمت مراجعة المنشور والموافقة عليه بنجاح.',reject:'تم رفض المنشور.', 'delete-content':'تم حذف المنشور.', 'ban-user':'تم حظر الحساب.', 'unban-user':'تم إلغاء حظر الحساب.', 'delete-user':'تم حذف الحساب.'})[act]||'تم تنفيذ الإجراء بنجاح.');
  await render();
 },true);
+
+document.addEventListener('submit',async event=>{
+ const form=event.target.closest('#external-video-link-form');if(!form)return;
+ event.preventDefault();
+ const feedback=form.querySelector('#external-video-link-feedback'),say=message=>{if(feedback)feedback.textContent=message};
+ const u=await userNow();
+ if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){say('غير مصرح لك بإضافة روابط.');return}
+ const title=form.elements.title.value.trim(),description=form.elements.description.value.trim();
+ let source,embed;try{source=new URL(form.elements.source_url.value.trim());embed=new URL(form.elements.embed_url.value.trim())}catch(_){say('أدخل رابطين صالحين.');return}
+ if(!form.elements.rights_confirmed.checked){say('أكد صلاحية الاستخدام والموافقات قبل الحفظ.');return}
+ if(source.protocol!=='https:'||embed.protocol!=='https:'||source.username||source.password||embed.username||embed.password){say('يجب استخدام روابط HTTPS آمنة من دون بيانات دخول ضمن الرابط.');return}
+ if(!title){say('اكتب عنوان المقطع.');return}
+ const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
+ const {error}=await db.from('external_video_links').insert({title,description,source_url:source.href,embed_url:embed.href,status:'pending',created_by:u.id});
+ if(error){say('تعذر حفظ الرابط: '+error.message);if(submit)submit.disabled=false;return}
+ form.reset();say('تم حفظ الرابط للمراجعة. لن يظهر للعامة حتى توافق عليه.');await render();
+});
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-external-action]');if(!button)return;
+ event.preventDefault();event.stopPropagation();
+ const u=await userNow();
+ if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){notify('غير مصرح لك بإدارة روابط الفيديو.');return}
+ const id=button.dataset.id,action=button.dataset.externalAction;
+ if(action==='delete'&&!await siteDialog('سيتم حذف رابط الفيديو من XLIVE18 فقط. الملف الأصلي سيبقى على موقع المصدر.',{confirm:true,danger:true,confirmLabel:'حذف الرابط'}))return;
+ button.disabled=true;
+ if(action==='approve'||action==='pending'){
+  const {error}=await db.from('external_video_links').update({status:action==='approve'?'approved':'pending',updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){notify('تعذر تحديث حالة الرابط: '+error.message);button.disabled=false;return}
+  notify(action==='approve'?'تم إظهار الرابط على الموقع.':'تم إخفاء الرابط من العرض العام.');
+ }else if(action==='delete'){
+  const {error}=await db.from('external_video_links').delete().eq('id',id);
+  if(error){notify('تعذر حذف الرابط: '+error.message);button.disabled=false;return}
+  notify('تم حذف الرابط من XLIVE18 فقط.');
+ }else return;
+ await render();
+});
 window.XLiveAdmin={render};
 })();
