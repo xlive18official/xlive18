@@ -8,6 +8,7 @@ const files = [
   "styles.css",
   "app.js",
   "auth.js",
+  "batch-video-upload.js",
   "admin.js",
   "account-controls.js",
   "site-editor.js",
