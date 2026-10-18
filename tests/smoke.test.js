@@ -13,7 +13,7 @@ const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_p
 
 test('Cloudflare build includes every browser script referenced by index.html', () => {
   const build = readFileSync('scripts/prepare-cloudflare.mjs', 'utf8');
-  for (const script of ['app.js', 'auth.js', 'admin.js', 'account-controls.js', 'site-editor.js', 'supabase-config.js']) {
+  for (const script of ['app.js', 'auth.js', 'batch-video-upload.js', 'admin.js', 'account-controls.js', 'site-editor.js', 'supabase-config.js']) {
     assert.ok(new RegExp('src="./' + script.replace('.', '\\.') + '(?:\\?[^"]*)?"').test(html), 'index.html must load ' + script);
     assert.ok(build.includes('"' + script + '"'), 'Cloudflare build must copy ' + script);
   }
