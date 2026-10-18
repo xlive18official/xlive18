@@ -131,10 +131,10 @@ document.addEventListener('submit',async event=>{
  if(source.protocol!=='https:'||embed.protocol!=='https:'||source.username||source.password||embed.username||embed.password){say('يجب استخدام روابط HTTPS آمنة من دون بيانات دخول ضمن الرابط.');return}
  // If a Pornhub watch-page URL was pasted into the embed field, convert its viewkey
  // to the official /embed/ endpoint. The root site URL alone cannot identify a video.
- const isPornhubHost=host=>/(^|\\.)pornhub\\.com$/i.test(host);
- if(isPornhubHost(source.hostname) && isPornhubHost(embed.hostname) && !/\\/embed\\//i.test(embed.pathname)){
+ const isPornhubHost=host=>/(^|\.)pornhub\.com$/i.test(host);
+ if(isPornhubHost(source.hostname) && isPornhubHost(embed.hostname) && !/\/embed\//i.test(embed.pathname)){
   const key=source.searchParams.get('viewkey')||embed.searchParams.get('viewkey');
-  if(key && /view_video\\.php/i.test(source.pathname)) {
+  if(key && /view_video\.php/i.test(source.pathname)) {
    embed=new URL('https://www.pornhub.com/embed/'+encodeURIComponent(key));
    form.elements.embed_url.value=embed.href;
    say('تم تحويل رابط المشاهدة إلى صيغة التضمين. سيتم حفظه بعد الإرسال.');
