@@ -867,7 +867,7 @@
         return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
       const externalCards = externalVideos.map(v => {
-        const media = '<div class="external-embed-wrap"><iframe class="external-clip-player" src="' + escapeHtml(v.embed_url) + '" title="' + escapeHtml(v.title) + '" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe></div>';
+        const media = '<div class="external-embed-wrap"><iframe class="external-clip-player" src="' + escapeHtml(v.embed_url) + '" title="' + escapeHtml(v.title) + '" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowfullscreen></iframe></div>';
         return '<article class="clip-card external-clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح المصدر الأصلي ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
       });
       const cards = hostedCards.concat(externalCards);
