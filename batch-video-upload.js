@@ -205,7 +205,7 @@
       if (uploaded > 0) {
         say('اكتمل رفع ' + uploaded + ' من ' + inspected.length + ' مقطعاً. المقاطع قيد المراجعة ولن تظهر للعامة قبل الموافقة.');
         window.XLiveApp?.showToast('تم رفع ' + uploaded + ' مقطعاً وإرسالها للمراجعة.');
-        document.dispatchEvent(new CustomEvent('xlive:batch-videos-uploaded'));
+        document.querySelector('[data-creator-tab="videos"]')?.click();
       }
       if (errors.length) say((uploaded ? 'تم رفع ' + uploaded + ' مقطعاً. ' : '') + 'تعذّر رفع ' + errors.length + ' ملف/ملفات. يمكنك إعادة المحاولة للملفات الفاشلة.');
     } catch (error) {
