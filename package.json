@@ -4,7 +4,7 @@
   "private": true,
   "description": "XLive 18 Arabic RTL social platform foundation",
   "scripts": {
-    "check:js": "node --check app.js && node --check auth.js && node --check batch-video-upload.js && node --check site-editor.js && node --check supabase-config.js",
+    "check:js": "node --check app.js && node --check auth.js && node --check batch-video-upload.js && node --check admin.js && node --check site-editor.js && node --check supabase-config.js",
     "test": "node --test tests/*.test.js",
     "build:cloudflare": "node scripts/prepare-cloudflare.mjs",
     "postinstall": "npm run build:cloudflare"
