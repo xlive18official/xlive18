@@ -81,7 +81,8 @@
     document.addEventListener('click', (event) => {
       if (event.target.closest('.sidebar [data-view]')) close();
       if (document.body.classList.contains('mobile-menu-open') &&
-          event.target.matches('body.mobile-menu-open::before')) close();
+          !event.target.closest('.sidebar') &&
+          !event.target.closest('#mobile-menu-toggle')) close();
     });
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
   })();
