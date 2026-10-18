@@ -233,14 +233,20 @@
     if (button) uploadBatch(Array.from(input.files || []), status, button, input);
   });
 
-  const observer = new MutationObserver(getOrCreateControls);
+  // The creator view is rendered asynchronously and its contents can be replaced
+  // after navigation. Observe the document so the batch button is mounted reliably.
+  const observer = new MutationObserver(() => getOrCreateControls());
   const start = () => {
-    const root = document.getElementById('app-view');
-    if (root) {
-      observer.observe(root, { childList: true, subtree: true });
-      getOrCreateControls();
+    if (document.documentElement) {
+      observer.observe(document.documentElement, { childList: true, subtree: true });
     }
+    getOrCreateControls();
   };
+  document.addEventListener('click', event => {
+    if (event.target.closest('[data-creator-tab]') || event.target.closest('[data-view="creator"]')) {
+      window.setTimeout(getOrCreateControls, 0);
+    }
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
 })();
