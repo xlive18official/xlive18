@@ -129,6 +129,20 @@ document.addEventListener('submit',async event=>{
  let source,embed;try{source=new URL(form.elements.source_url.value.trim());embed=new URL(form.elements.embed_url.value.trim())}catch(_){say('أدخل رابطين صالحين.');return}
  if(!form.elements.rights_confirmed.checked){say('أكد صلاحية الاستخدام والموافقات قبل الحفظ.');return}
  if(source.protocol!=='https:'||embed.protocol!=='https:'||source.username||source.password||embed.username||embed.password){say('يجب استخدام روابط HTTPS آمنة من دون بيانات دخول ضمن الرابط.');return}
+ // If a Pornhub watch-page URL was pasted into the embed field, convert its viewkey
+ // to the official /embed/ endpoint. The root site URL alone cannot identify a video.
+ const isPornhubHost=host=>/(^|\\.)pornhub\\.com$/i.test(host);
+ if(isPornhubHost(source.hostname) && isPornhubHost(embed.hostname) && !/\\/embed\\//i.test(embed.pathname)){
+  const key=source.searchParams.get('viewkey')||embed.searchParams.get('viewkey');
+  if(key && /view_video\\.php/i.test(source.pathname)) {
+   embed=new URL('https://www.pornhub.com/embed/'+encodeURIComponent(key));
+   form.elements.embed_url.value=embed.href;
+   say('تم تحويل رابط المشاهدة إلى صيغة التضمين. سيتم حفظه بعد الإرسال.');
+  } else {
+   say('رابط Pornhub العادي لا يكفي. افتح الفيديو نفسه ثم Share ← Embed وانسخ رابط التضمين، أو أدخل رابط فيديو يحتوي على viewkey.');
+   return;
+  }
+ }
  if(!title){say('اكتب عنوان المقطع.');return}
  const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
  const {error}=await db.from('external_video_links').insert({title,description,source_url:source.href,embed_url:embed.href,status:'pending',created_by:u.id});
