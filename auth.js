@@ -880,10 +880,10 @@
           const media = signed?.signedUrl
             ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '" aria-label="' + escapeHtml(v.title) + '"></video>'
             : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
-          return '<article class="clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong>' + escapeHtml(v.title) + '</strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
+          return '<article class="clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong><span class="clip-title-marquee">' + escapeHtml(v.title) + '</span></strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
         }
         const media = '<div class="external-embed-wrap"><iframe class="external-clip-player" src="' + escapeHtml(v.embed_url) + '" title="' + escapeHtml(v.title) + '" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowfullscreen></iframe></div>';
-        return '<article class="clip-card external-clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong>' + escapeHtml(v.title) + '</strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح الفيديو بحجم كامل ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
+        return '<article class="clip-card external-clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong><span class="clip-title-marquee">' + escapeHtml(v.title) + '</span></strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح الفيديو بحجم كامل ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
       panel.className = 'clip-grid clips-gallery-grid';
       panel.innerHTML = cards.length ? cards.join('') : '<div class="empty-panel clips-gallery-empty"><h3>لا توجد مقاطع منشورة بعد</h3><p>ستظهر هنا المقاطع العامة المقبولة وروابط الفيديوهات التي تمت الموافقة على تضمينها.</p></div>';
