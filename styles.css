@@ -699,7 +699,8 @@ img, video, iframe, canvas, svg {
 .clips-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .clips-gallery-card .clip-player,
 .clips-gallery-card .external-embed-wrap,
-.clips-gallery-card .clip-placeholder{aspect-ratio:4/3;min-height:0;max-height:none}
+.clips-gallery-card .clip-placeholder{aspect-ratio:16/9;min-height:0;max-height:none}
+.clips-gallery-card .clip-player{object-fit:cover}
 .clips-gallery-card .external-embed-wrap{position:relative;overflow:hidden}
 .clips-gallery-card .external-clip-player{position:absolute;inset:0;width:100%;height:100%}
 .clips-gallery-card .clip-card-body{padding:7px 9px;gap:0}
