@@ -840,43 +840,75 @@
     renderHomeFeed(Number(pageButton.dataset.feedPage));
   });
 
-  async function renderClips() {
+  let clipsPage = 1;
+  async function renderClips(page = clipsPage) {
     const supabase = ensureClient();
     const panel = document.getElementById('clips-feed');
     if (!panel) return;
+    clipsPage = Math.max(1, Number(page) || 1);
+    let pager = document.getElementById('clips-pagination');
+    if (!pager) {
+      panel.insertAdjacentHTML('afterend', '<nav id="clips-pagination" class="home-pagination" aria-label="صفحات المقاطع"></nav>');
+      pager = document.getElementById('clips-pagination');
+    }
     if (!supabase) {
       panel.innerHTML = '<div class="empty-panel"><h3>المقاطع غير متاحة حالياً</h3><p>تعذر الاتصال بخدمة المقاطع. حاول مجدداً لاحقاً.</p></div>';
+      if (pager) pager.innerHTML = '';
       return;
     }
     try {
-      const {data, error} = await supabase.from('videos')
-        .select('id,title,description,storage_path,created_at')
-        .eq('status','approved')
-        .eq('visibility','public')
-        .eq('is_paid',false)
-        .order('created_at',{ascending:false})
-        .limit(40);
-      if (error) throw error;
-      const videos = data || [];
-      const externalResult = await supabase.from('external_video_links').select('id,title,description,source_url,embed_url,created_at').eq('status','approved').order('created_at',{ascending:false}).limit(40);
-      const externalVideos = externalResult.error ? [] : (externalResult.data || []);
-      const hostedCards = await Promise.all(videos.map(async v => {
-        const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
-        const src = signed?.signedUrl || '';
-        const media = src ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(src) + '"></video>' : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
-        return '<article class="clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><small>' + shortDate(v.created_at) + '</small></div></article>';
-      }));
-      const externalCards = externalVideos.map(v => {
+      const pageSize = 16;
+      const to = clipsPage * pageSize - 1;
+      const [hostedResult, externalResult] = await Promise.all([
+        supabase.from('videos').select('id,title,description,storage_path,created_at',{count:'exact'})
+          .eq('status','approved').eq('visibility','public').eq('is_paid',false)
+          .order('created_at',{ascending:false}).range(0,to),
+        supabase.from('external_video_links').select('id,title,description,source_url,embed_url,created_at',{count:'exact'})
+          .eq('status','approved').order('created_at',{ascending:false}).range(0,to)
+      ]);
+      if (hostedResult.error) throw hostedResult.error;
+      const hosted = (hostedResult.data || []).map(v => ({...v, _kind:'hosted'}));
+      const external = externalResult.error ? [] : (externalResult.data || []).map(v => ({...v, _kind:'external'}));
+      const totalCount = Number(hostedResult.count || 0) + Number(externalResult.count || 0);
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+      if (clipsPage > totalPages) return renderClips(totalPages);
+      const items = hosted.concat(external).sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      const visible = items.slice((clipsPage - 1) * pageSize, clipsPage * pageSize);
+      const cards = await Promise.all(visible.map(async v => {
+        if (v._kind === 'hosted') {
+          const {data: signed} = await supabase.storage.from('video-originals').createSignedUrl(v.storage_path, 3600);
+          const media = signed?.signedUrl
+            ? '<video class="clip-player" controls playsinline preload="metadata" src="' + escapeHtml(signed.signedUrl) + '" aria-label="' + escapeHtml(v.title) + '"></video>'
+            : '<div class="clip-placeholder">الفيديو غير متاح للعرض حالياً</div>';
+          return '<article class="clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong>' + escapeHtml(v.title) + '</strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
+        }
         const media = '<div class="external-embed-wrap"><iframe class="external-clip-player" src="' + escapeHtml(v.embed_url) + '" title="' + escapeHtml(v.title) + '" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowfullscreen></iframe></div>';
-        return '<article class="clip-card external-clip-card">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong></div><p>' + escapeHtml(v.description || '') + '</p><a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح المصدر الأصلي ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
-      });
-      const cards = hostedCards.concat(externalCards);
-      panel.innerHTML = cards.length ? cards.join('') : '<div class="empty-panel"><h3>لا توجد مقاطع مميزة بعد</h3><p>ستظهر هنا المقاطع العامة المقبولة وروابط الفيديوهات التي تمت الموافقة على تضمينها.</p><span class="status-pill">بانتظار نشر أول فيديو مقبول</span></div>';
+        return '<article class="clip-card external-clip-card clips-gallery-card">' + media + '<div class="clip-card-body"><strong>' + escapeHtml(v.title) + '</strong>' + (v.description ? '<p>' + escapeHtml(v.description) + '</p>' : '') + '<a class="text-button" href="' + escapeHtml(v.source_url) + '" target="_blank" rel="noopener noreferrer">فتح الفيديو بحجم كامل ↗</a><small>' + shortDate(v.created_at) + '</small></div></article>';
+      }));
+      panel.className = 'clip-grid clips-gallery-grid';
+      panel.innerHTML = cards.length ? cards.join('') : '<div class="empty-panel clips-gallery-empty"><h3>لا توجد مقاطع منشورة بعد</h3><p>ستظهر هنا المقاطع العامة المقبولة وروابط الفيديوهات التي تمت الموافقة على تضمينها.</p></div>';
+      if (pager) {
+        if (totalPages <= 1) pager.innerHTML = '';
+        else {
+          const first = Math.max(1, Math.min(clipsPage - 2, totalPages - 4));
+          const last = Math.min(totalPages, Math.max(5, clipsPage + 2));
+          const pages = [];
+          for (let p = first; p <= last; p++) pages.push('<button type="button" class="home-page-number ' + (p === clipsPage ? 'active' : '') + '" data-clips-page="' + p + '" aria-current="' + (p === clipsPage ? 'page' : 'false') + '">' + p + '</button>');
+          pager.innerHTML = '<button type="button" class="home-page-arrow" data-clips-page="' + Math.max(1,clipsPage-1) + '" aria-label="الصفحة السابقة" ' + (clipsPage === 1 ? 'disabled' : '') + '>‹</button>' + pages.join('') + '<button type="button" class="home-page-arrow" data-clips-page="' + Math.min(totalPages,clipsPage+1) + '" aria-label="الصفحة التالية" ' + (clipsPage === totalPages ? 'disabled' : '') + '>›</button>';
+        }
+      }
     } catch (error) {
       panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل المقاطع</h3><p>تحقق من الاتصال ثم حاول مجدداً.</p></div>';
+      if (pager) pager.innerHTML = '';
       console.error('XLive clips error', error);
     }
   }
+  document.addEventListener('click', event => {
+    const pageButton = event.target.closest('[data-clips-page]');
+    if (!pageButton || pageButton.disabled) return;
+    event.preventDefault();
+    renderClips(Number(pageButton.dataset.clipsPage));
+  });
 
   function shortDate(value) {
     try { return new Date(value).toLocaleString('ar', {dateStyle:'short',timeStyle:'short'}); }
