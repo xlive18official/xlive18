@@ -693,3 +693,26 @@ img, video, iframe, canvas, svg {
  .clips-gallery-card .clip-card-body>strong{font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.clips-gallery-card .clip-card-body>strong .clip-title-marquee{animation:none}}
+
+
+/* Clip gallery: landscape cards with more room for the video; hide the external full-size link row. */
+.clips-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.clips-gallery-card .clip-player,
+.clips-gallery-card .external-embed-wrap,
+.clips-gallery-card .clip-placeholder{aspect-ratio:16/9;min-height:0;max-height:none}
+.clips-gallery-card .clip-player{object-fit:cover}
+.clips-gallery-card .external-embed-wrap{position:relative;overflow:hidden}
+.clips-gallery-card .external-clip-player{position:absolute;inset:0;width:100%;height:100%}
+.clips-gallery-card .clip-card-body{padding:7px 9px;gap:0}
+.clips-gallery-card .clip-card-body>.text-button,
+.clips-gallery-card .clip-card-body>a.text-button{display:none!important}
+@media(max-width:760px){
+  .clips-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .clips-gallery-card{border-radius:10px}
+  .clips-gallery-card .clip-card-body{padding:7px 8px}
+  .clips-gallery-card .clip-card-body>strong{font-size:11px}
+}
+@media(max-width:360px){
+  .clips-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .clips-gallery-card .clip-card-body>strong{font-size:10px}
+}
