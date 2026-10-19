@@ -176,7 +176,7 @@
       const desc = descriptions[view] || ['الخدمة غير متصلة', 'سيتم تفعيل هذه الميزة بعد تنفيذ الخادم وقاعدة البيانات والتحقق من الصلاحيات.'];
       body = notice(desc[0], desc[1]);
       if (view === 'clips') {
-        body += '<div id="clips-feed" class="clip-grid"><div class="empty-panel"><h3>جارٍ تحميل المقاطع المميزة…</h3><p>لحظات ونجهّز المقاطع العامة المنشورة.</p></div></div>';
+        body += '<div id="clips-feed" class="clip-grid clips-gallery-grid"><div class="empty-panel clips-gallery-empty"><h3>جارٍ تحميل المقاطع المميزة…</h3><p>لحظات ونجهّز المقاطع العامة المنشورة.</p></div></div><nav id="clips-pagination" class="home-pagination" aria-label="صفحات المقاطع"></nav>';
       } else if (view === 'purchases') {
         body += '<div class="simple-panel"><h3>مشترياتك</h3><p>ستظهر عمليات الشراء المؤكدة فقط بعد ربط مزوّد الدفع والتحقق من إشعاراته على الخادم.</p></div>';
       }
