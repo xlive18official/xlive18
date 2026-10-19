@@ -670,3 +670,26 @@ img, video, iframe, canvas, svg {
 .clips-gallery-empty{grid-column:1/-1}
 @media(max-width:760px){.clips-gallery-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.clips-gallery-card{border-radius:7px}.clips-gallery-card .clip-card-body{padding:5px;gap:4px}.clips-gallery-card .clip-card-body>strong{font-size:9px}.clips-gallery-card .clip-card-body>p,.clips-gallery-card .text-button{font-size:8px}.clips-gallery-card .clip-card-body>small{font-size:8px}}
 @media(max-width:360px){.clips-gallery-grid{gap:3px}.clips-gallery-card .clip-card-body>strong{font-size:8px}}
+
+
+/* Clip gallery: larger tiles and single-line moving titles. */
+.clips-gallery-grid{gap:10px}
+.clips-gallery-card{overflow:hidden}
+.clips-gallery-card .clip-card-body{min-width:0;padding:6px;gap:4px}
+.clips-gallery-card .clip-card-body>strong{display:block;width:100%;min-width:0;overflow:hidden;white-space:nowrap;direction:rtl;text-align:right;font-size:12px;line-height:1.5}
+.clips-gallery-card .clip-card-body>strong .clip-title-marquee{display:inline-block;white-space:nowrap;min-width:100%;animation:clip-title-marquee 10s linear infinite}
+@keyframes clip-title-marquee{0%,10%{transform:translateX(0)}90%,100%{transform:translateX(65%)}}
+.clips-gallery-card .clip-card-body>p,.clips-gallery-card .clip-card-body>small{display:none!important}
+.clips-gallery-card .text-button{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;line-height:1.4}
+@media(max-width:760px){
+ .clips-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .clips-gallery-card{border-radius:9px}
+ .clips-gallery-card .clip-card-body{padding:6px;gap:4px}
+ .clips-gallery-card .clip-card-body>strong{font-size:11px}
+ .clips-gallery-card .text-button{font-size:9px}
+}
+@media(max-width:360px){
+ .clips-gallery-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .clips-gallery-card .clip-card-body>strong{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.clips-gallery-card .clip-card-body>strong .clip-title-marquee{animation:none}}
