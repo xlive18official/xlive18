@@ -716,3 +716,16 @@ img, video, iframe, canvas, svg {
   .clips-gallery-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .clips-gallery-card .clip-card-body>strong{font-size:10px}
 }
+
+
+/* Compact landscape clip title strip */
+.clips-gallery-card .clip-card-body{padding:3px 6px!important;min-height:0;gap:0!important}
+.clips-gallery-card .clip-card-body>strong{font-size:10px!important;line-height:1.2!important;height:15px;max-height:15px;overflow:hidden}
+.clips-gallery-card .clip-card-body>strong .clip-title-marquee{line-height:1.2}
+@media(max-width:760px){
+  .clips-gallery-card .clip-card-body{padding:3px 5px!important}
+  .clips-gallery-card .clip-card-body>strong{font-size:9px!important;height:13px;max-height:13px}
+}
+@media(max-width:360px){
+  .clips-gallery-card .clip-card-body>strong{font-size:8px!important;height:12px;max-height:12px}
+}
