@@ -20,10 +20,12 @@
     mode = next === 'signup' ? 'signup' : 'signin';
     const name = document.getElementById('auth-name-wrap');
     const age = document.getElementById('auth-age-wrap');
+    const phone = document.getElementById('auth-phone-wrap');
     const submit = document.getElementById('auth-submit');
     const reset = document.getElementById('auth-reset');
     if (name) name.hidden = mode !== 'signup';
     if (age) age.hidden = mode !== 'signup';
+    if (phone) phone.hidden = mode !== 'signup';
     if (submit) submit.textContent = mode === 'signup' ? 'إنشاء حساب' : 'تسجيل الدخول';
     if (reset) reset.hidden = mode !== 'signin';
     feedback('');
@@ -246,7 +248,7 @@
     document.body.classList.add('auth-only');
     const signoutButton = document.getElementById('auth-signout');
     if (signoutButton) signoutButton.hidden = true;
-    root.innerHTML = '<section class="auth-screen"><a class="auth-brand" href="#" aria-label="XLIVE 18"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a><div class="auth-intro"><h1>أهلاً بك في XLIVE 18</h1><p>سجّل الدخول أو أنشئ حسابك للمتابعة.</p></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div></section>';
+    root.innerHTML = '<section class="auth-screen"><a class="auth-brand" href="#" aria-label="XLIVE 18"><span class="brand-mark">X</span><span>LIVE <b>18</b></span></a><div class="auth-intro"><h1>أهلاً بك في XLIVE 18</h1><p>سجّل الدخول أو أنشئ حسابك للمتابعة.</p></div><div class="simple-panel auth-panel"><div class="auth-tabs"><button type="button" class="button button-primary" data-auth-mode="signin">تسجيل الدخول</button><button type="button" class="button button-secondary" data-auth-mode="signup">إنشاء حساب</button></div><form id="auth-form" class="form-stack"><div class="field" id="auth-name-wrap" hidden><label for="auth-name">الاسم الظاهر</label><input id="auth-name" maxlength="40" autocomplete="nickname" placeholder="اسم العرض"></div><div class="field"><label for="auth-email">البريد الإلكتروني</label><input id="auth-email" type="email" required autocomplete="email" maxlength="254" placeholder="you@example.com"></div><div class="field" id="auth-phone-wrap" hidden><label for="auth-phone">رقم الهاتف السوري</label><input id="auth-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="+9639XXXXXXXX" aria-describedby="auth-phone-help"><small id="auth-phone-help">أدخل رقمًا سوريًا يبدأ بـ +963، مثل +9639XXXXXXXX.</small></div><div class="field"><label for="auth-password">كلمة المرور</label><input id="auth-password" type="password" required minlength="8" maxlength="72" autocomplete="current-password" placeholder="8 أحرف على الأقل"></div><label class="auth-age" id="auth-age-wrap" hidden><input id="auth-age" type="checkbox"> أؤكد أن عمري 18 عاماً أو أكثر.</label><button class="button button-primary" id="auth-submit" type="submit">تسجيل الدخول</button><p id="auth-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form></div></section>';
     setMode(mode);
   }
   function ensureClient() {
@@ -536,13 +538,16 @@
     const password = document.getElementById('auth-password').value;
     const submit = document.getElementById('auth-submit');
     if (mode === 'signup' && !document.getElementById('auth-age').checked) { feedback('يجب تأكيد أن عمرك 18 عاماً أو أكثر.'); return; }
+    const phoneInput = document.getElementById('auth-phone');
+    const phoneNumber = phoneInput ? phoneInput.value.replace(/[\\s()-]/g, '') : '';
+    if (mode === 'signup' && !/^\\+9639\\d{8}$/.test(phoneNumber)) { feedback('يجب إدخال رقم هاتف محمول سوري صحيح يبدأ بـ +963، مثل +9639XXXXXXXX.'); phoneInput?.focus(); return; }
     submit.disabled = true;
     submit.textContent = 'جارٍ التنفيذ…';
     feedback('');
     try {
       if (mode === 'signup') {
         const displayName = document.getElementById('auth-name').value.trim();
-        const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true}}});
+        const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true,phone_number:phoneNumber}}});
         if (error) throw error;
         if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.navigate('home'); } else { feedback('تم إنشاء الحساب، لكن لم تبدأ جلسة الدخول تلقائياً. تأكد من تعطيل تأكيد البريد في إعدادات Supabase ثم حاول مجدداً.'); }
       } else {
