@@ -342,7 +342,7 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
   assert.ok(html.includes('styles.css?v=20261021-03'));
-  assert.ok(html.includes('app.js?v=20261021-03'));
+  assert.ok(html.includes('app.js?v=20261021-04'));
 });
 
 
@@ -457,7 +457,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-05/);
+  assert.match(html, /auth.js\?v=20261021-06/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -493,4 +493,11 @@ test('successful sign-in clears auth-only before navigating to the home view', (
   const approvedNavigate = auth.indexOf("window.XLiveApp?.navigate('home')", approvedBranch);
   assert.ok(adminClear > adminBranch && adminClear < adminNavigate, 'admin login must clear the auth-only screen before navigation');
   assert.ok(approvedClear > approvedBranch && approvedClear < approvedNavigate, 'approved user login must clear the auth-only screen before navigation');
+});
+
+
+test('startup waits for auth session restoration before rendering any route', () => {
+  assert.match(app, /function showRoute\(view, extra = '', scroll = false\) \{[\s\S]*?if \(!window\.XLiveAuth\) return;[\s\S]*?if \(window\.XLiveAuth\.isReady && !window\.XLiveAuth\.isReady\(\)\) return;/);
+  assert.match(auth, /client\.auth\.getSession\(\)\.then\(async \(\{data\}\) => \{[\s\S]*?authReady = true;[\s\S]*?window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
+  assert.doesNotMatch(auth, /setTimeout\(renderProfile, 0\)/);
 });
