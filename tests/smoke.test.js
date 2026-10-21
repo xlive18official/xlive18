@@ -457,7 +457,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-04/);
+  assert.match(html, /auth.js\?v=20261021-05/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -481,4 +481,16 @@ test('admin login bypasses account approval lookup before profile status is quer
   assert.ok(adminBypass >= 0, 'admin bypass should exist');
   assert.ok(profileLookup > adminBypass, 'admin bypass must run before profile lookup can block login');
   assert.match(auth, /if \(isAdmin\) \{[\s\S]*?window\.XLiveApp\?\.navigate\('home'\)/);
+});
+
+
+test('successful sign-in clears auth-only before navigating to the home view', () => {
+  const adminBranch = auth.indexOf('if (isAdmin) {');
+  const adminClear = auth.indexOf("document.body.classList.remove('auth-only');", adminBranch);
+  const adminNavigate = auth.indexOf("window.XLiveApp?.navigate('home')", adminBranch);
+  const approvedBranch = auth.indexOf("if (profile.account_status === 'approved')");
+  const approvedClear = auth.indexOf("document.body.classList.remove('auth-only');", approvedBranch);
+  const approvedNavigate = auth.indexOf("window.XLiveApp?.navigate('home')", approvedBranch);
+  assert.ok(adminClear > adminBranch && adminClear < adminNavigate, 'admin login must clear the auth-only screen before navigation');
+  assert.ok(approvedClear > approvedBranch && approvedClear < approvedNavigate, 'approved user login must clear the auth-only screen before navigation');
 });
