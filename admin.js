@@ -58,7 +58,7 @@ async function render(){
  }
  const users=document.getElementById('admin-users');
  if(us.error)users.innerHTML='<p>تعذر تحميل الحسابات: '+esc(us.error.message)+'</p>';
- else users.innerHTML='<div class="admin-user-list">'+(us.data||[]).map(p=>'<article class="admin-user-row"><div><strong>'+esc(p.display_name||p.username||'مستخدم')+'</strong><p>'+esc(p.email||'')+'</p>'+(p.phone_number?'<p>الهاتف: '+esc(p.phone_number)+' <small>(غير موثّق)</small></p>':'<p>الهاتف: غير متوفر</p>')+'<small>انضم '+date(p.created_at)+(p.banned?' · محظور':'')+'</small></div><div class="social-actions">'+(p.id===u.id?'<span class="status-pill">حسابك الإداري</span>':(p.banned?'<button class="button button-secondary" data-admin-action="unban-user" data-id="'+p.id+'">إلغاء الحظر</button>':'<button class="button button-secondary" data-admin-action="ban-user" data-id="'+p.id+'">حظر الحساب</button>')+'<button class="button button-danger" data-admin-action="delete-user" data-id="'+p.id+'">حذف الحساب</button>')+'</div></article>').join('')+'</div>';
+ else users.innerHTML='<div class="admin-user-list">'+(us.data||[]).map(p=>'<article class="admin-user-row"><div><strong>'+esc(p.display_name||p.username||'مستخدم')+'</strong><p>'+esc(p.email||'')+'</p>'+(p.phone_number?'<p>الهاتف: '+esc(p.phone_number)+' <small>(غير موثّق)</small></p>':'<p>الهاتف: غير متوفر</p>')+'<span class="status-pill">'+({pending:'بانتظار الموافقة',approved:'تمت الموافقة',rejected:'مرفوض'}[p.account_status]||'بانتظار الموافقة')+'</span><small>انضم '+date(p.created_at)+(p.banned?' · محظور':'')+'</small></div><div class="social-actions">'+(p.account_status!=='approved'&&p.id!==u.id?'<button class="button button-primary" data-admin-action="approve-account" data-id="'+p.id+'">الموافقة على الحساب</button>':'')+(p.account_status!=='rejected'&&p.id!==u.id?'<button class="button button-secondary" data-admin-action="reject-account" data-id="'+p.id+'">رفض الحساب</button>':'')+(p.id===u.id?'<span class="status-pill">حسابك الإداري</span>':(p.banned?'<button class="button button-secondary" data-admin-action="unban-user" data-id="'+p.id+'">إلغاء الحظر</button>':'<button class="button button-secondary" data-admin-action="ban-user" data-id="'+p.id+'">حظر الحساب</button>')+'<button class="button button-danger" data-admin-action="delete-user" data-id="'+p.id+'">حذف الحساب</button>')+'</div></article>').join('')+'</div>';
  const externalList=document.getElementById('external-video-links-list');
  if(externalList){
   const {data:links,error:linksError}=await db.from('external_video_links').select('id,title,description,source_url,embed_url,status,created_at').order('created_at',{ascending:false}).limit(100);
@@ -98,7 +98,12 @@ document.addEventListener('click',async e=>{
  e.preventDefault();e.stopImmediatePropagation();
  const act=b.dataset.adminAction;if(act==='refresh'){await render();return}
  const u=await userNow();if(!u||(u.app_metadata?.role!=='admin'&&String(u.email||'').toLowerCase()!=='xlive18.official@gmail.com')){notify('غير مصرح لك بتنفيذ هذا الإجراء.');return}
- if(act==='approve'||act==='reject'){
+ if(act==='approve-account'||act==='reject-account'){
+  const status=act==='approve-account'?'approved':'rejected';
+  if(!await siteDialog(status==='approved'?'سيُسمح لهذا الحساب بدخول الموقع بعد الموافقة.':'سيتم رفض طلب إنشاء هذا الحساب.',{confirm:true,danger:status==='rejected',confirmLabel:status==='approved'?'الموافقة على الحساب':'رفض الحساب'}))return;
+  const {error}=await db.rpc('admin_set_account_status',{p_user_id:b.dataset.id,p_status:status});
+  if(error){notify('تعذر تحديث حالة الحساب: '+error.message);return}
+ }else if(act==='approve'||act==='reject'){
   let reason=null;if(act==='reject'){reason=await siteDialog('يمكنك كتابة سبب رفض المنشور ليظهر ضمن سجل المراجعة.',{input:true,inputLabel:'سبب الرفض (اختياري)',confirmLabel:'تأكيد الرفض'});if(reason===null)return}
   const {error}=await db.rpc('admin_review_content',{p_type:b.dataset.kind,p_id:b.dataset.id,p_decision:act,p_reason:reason});
   if(error){notify('تعذر تحديث المنشور: '+error.message);return}
@@ -115,7 +120,7 @@ document.addEventListener('click',async e=>{
   if(!await siteDialog('سيتم حذف الحساب نهائياً. قد يؤدي ذلك إلى فقدان بياناته المرتبطة، ولا يمكن التراجع عن العملية.',{confirm:true,danger:true,confirmLabel:'حذف الحساب نهائياً'}))return;
   const {error}=await db.rpc('admin_delete_user',{p_user_id:b.dataset.id});if(error){notify('تعذر حذف الحساب: '+error.message);return}
  }
- notify(({approve:'تمت مراجعة المنشور والموافقة عليه بنجاح.',reject:'تم رفض المنشور.', 'delete-content':'تم حذف المنشور.', 'ban-user':'تم حظر الحساب.', 'unban-user':'تم إلغاء حظر الحساب.', 'delete-user':'تم حذف الحساب.'})[act]||'تم تنفيذ الإجراء بنجاح.');
+ notify(({approve:'تمت مراجعة المنشور والموافقة عليه بنجاح.',reject:'تم رفض المنشور.', 'delete-content':'تم حذف المنشور.', 'ban-user':'تم حظر الحساب.', 'unban-user':'تم إلغاء حظر الحساب.', 'delete-user':'تم حذف الحساب.','approve-account':'تمت الموافقة على الحساب.','reject-account':'تم رفض الحساب.'})[act]||'تم تنفيذ الإجراء بنجاح.');
  await render();
 },true);
 
