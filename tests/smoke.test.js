@@ -457,7 +457,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-06/);
+  assert.match(html, /auth.js\?v=20261021-07/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
