@@ -76,14 +76,13 @@
     // This prevents the loading -> profile -> sign-in flash on a cold page load.
     if (!window.XLiveAuth) return;
     if (window.XLiveAuth.isReady && !window.XLiveAuth.isReady()) return;
-    // Wait for the persisted session before deciding whether a protected route is allowed.
-    if (view !== 'profile' && view !== 'home') {
-      if (!window.XLiveAuth.getUser()) {
-        view = 'profile';
-        extra = '';
-        const profileHash = routeHash('profile');
-        if (window.location.hash !== profileHash) window.location.hash = profileHash;
-      }
+    // The entire application requires a signed-in, approved account.
+    // Keep only the profile/auth screen accessible to signed-out visitors.
+    if (view !== 'profile' && !window.XLiveAuth.getUser()) {
+      view = 'profile';
+      extra = '';
+      const profileHash = routeHash('profile');
+      if (window.location.hash !== profileHash) window.location.hash = profileHash;
     }
     render(view, extra);
     if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
