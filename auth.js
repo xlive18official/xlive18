@@ -71,7 +71,7 @@
       const encoded=path.split('/').map(encodeURIComponent).join('/');
       xhr.open('POST',base+'/storage/v1/object/video-originals/'+encoded);
       xhr.setRequestHeader('Authorization','Bearer '+token); xhr.setRequestHeader('apikey',config.key);
-      xhr.setRequestHeader('Content-Type',file.type); xhr.setRequestHeader('x-upsert','false'); xhr.setRequestHeader('cache-control','3600');
+      xhr.setRequestHeader('Content-Type',file.type); xhr.setRequestHeader('x-upsert','false'); xhr.setRequestHeader('cache-control','max-age=3600');
       xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded,e.total);};
       xhr.onerror=()=>reject(new Error('تعذر الاتصال بخدمة رفع الفيديو.'));
       xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300){resolve();return;}let msg='';try{const j=JSON.parse(xhr.responseText);msg=j.message||j.error||'';}catch(_){}reject(new Error(msg||('فشل رفع الملف (HTTP '+xhr.status+').')));};
