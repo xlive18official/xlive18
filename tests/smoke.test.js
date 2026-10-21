@@ -466,7 +466,7 @@ test('new accounts wait for admin approval before navigating home', () => {
   assert.match(auth, /showAccountApprovalState\(supabase, true\)/);
   assert.match(auth, /select\('account_status'\)/);
   assert.match(auth, /حسابك بانتظار الموافقة/);
-  assert.match(auth, /admin_set_account_status/);
+  assert.match(admin, /admin_set_account_status/);
   assert.match(admin, /approve-account/);
   assert.match(admin, /reject-account/);
   const migration = readFileSync('supabase/migrations/0032_account_creation_approval.sql', 'utf8');
