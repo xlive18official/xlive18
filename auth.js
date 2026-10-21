@@ -392,6 +392,7 @@
     // Administrators must never be trapped by a missing/stale profile approval row.
     const isAdmin = current.app_metadata?.role === 'admin' || String(current.email || '').trim().toLowerCase() === 'xlive18.official@gmail.com';
     if (isAdmin) {
+      document.body.classList.remove('auth-only');
       if (!preserveRoute) {
         feedback(justRegistered ? 'تم تسجيل الحساب الإداري.' : 'تم تسجيل الدخول.');
         window.XLiveApp?.navigate('home');
@@ -408,6 +409,7 @@
       return;
     }
     if (profile.account_status === 'approved') {
+      document.body.classList.remove('auth-only');
       if (!preserveRoute) {
         feedback(justRegistered ? 'تمت الموافقة على الحساب.' : 'تم تسجيل الدخول.');
         window.XLiveApp?.navigate('home');
