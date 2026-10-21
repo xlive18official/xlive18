@@ -6,8 +6,7 @@ alter table public.profiles
   check (account_status in ('pending','approved','rejected'));
 
 -- Existing accounts are grandfathered in; only newly created profiles wait for review.
-update public.profiles set account_status = 'approved' where account_status = 'pending'
-  and created_at < now() - interval '1 minute';
+update public.profiles set account_status = 'approved';
 
 create index if not exists profiles_account_status_idx
   on public.profiles (account_status, created_at desc);
