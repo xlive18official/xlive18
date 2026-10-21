@@ -255,15 +255,16 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => {
+    client.auth.getSession().then(async ({data}) => {
       user = data?.session?.user || null;
       authReady = true;
       const signoutButton = document.getElementById('auth-signout');
       if (signoutButton) signoutButton.hidden = !user;
       if (passwordRecoveryActive) return;
       if (user) document.body.classList.remove('auth-only');
-      // Re-evaluate the URL after the session is known; never force the homepage here.
-      window.XLiveApp?.restoreCurrentRoute();
+      // Check approval before restoring any protected route after a page refresh.
+      if (user && !passwordRecoveryActive) await showAccountApprovalState(client, false, true);
+      else window.XLiveApp?.restoreCurrentRoute();
     }).catch(() => {
       authReady = true;
       window.XLiveApp?.restoreCurrentRoute();
@@ -281,8 +282,9 @@
         window.XLiveApp?.navigate('profile');
         return;
       }
+      if (event === 'SIGNED_IN') return; // The signup/signin handler checks approval before navigation.
       if (user) document.body.classList.remove('auth-only');
-      // INITIAL_SESSION and SIGNED_IN must not replace the URL-selected page.
+      // Session refreshes preserve the current route; approval is checked on initial session restore.
       window.XLiveApp?.restoreCurrentRoute();
     });
     subscription = result?.data?.subscription || null;
@@ -384,7 +386,7 @@
       feedback(error ? 'تعذر إرسال تعليمات الاستعادة. تحقق من إعدادات البريد.' : 'إذا كان البريد مسجلاً، فستصلك تعليمات الاستعادة.');
     }
   });
-  async function showAccountApprovalState(supabase, justRegistered) {
+  async function showAccountApprovalState(supabase, justRegistered, preserveRoute = false) {
     const current = user || (await supabase.auth.getUser()).data?.user;
     if (!current) return;
     const { data: profile, error } = await supabase.from('profiles').select('account_status').eq('id', current.id).maybeSingle();
@@ -394,8 +396,13 @@
       return;
     }
     if (profile.account_status === 'approved' || current.app_metadata?.role === 'admin' || String(current.email||'').toLowerCase() === 'xlive18.official@gmail.com') {
-      feedback(justRegistered ? 'تمت الموافقة على الحساب.' : 'تم تسجيل الدخول.');
-      window.XLiveApp?.navigate('home');
+      if (!preserveRoute) {
+        feedback(justRegistered ? 'تمت الموافقة على الحساب.' : 'تم تسجيل الدخول.');
+        window.XLiveApp?.navigate('home');
+      } else {
+        document.body.classList.remove('auth-only');
+        window.XLiveApp?.restoreCurrentRoute();
+      }
       return;
     }
     document.body.classList.add('auth-only');
