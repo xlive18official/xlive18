@@ -57,6 +57,52 @@
   }
 
 
+  function showCreatorUploadStatus(title, message, options = {}) {
+    document.getElementById('creator-upload-status-modal')?.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'creator-upload-status-modal';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'creator-upload-status-title');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:rgba(8,12,20,.72);';
+    const card = document.createElement('section');
+    card.style.cssText = 'width:min(100%,440px);padding:26px;border-radius:18px;background:var(--panel,#fff);color:var(--text,#111);box-shadow:0 20px 70px rgba(0,0,0,.28);text-align:center;';
+    const heading = document.createElement('h2');
+    heading.id = 'creator-upload-status-title';
+    heading.textContent = title;
+    heading.style.marginTop = '0';
+    const body = document.createElement('p');
+    body.id = 'creator-upload-status-message';
+    body.setAttribute('role', 'status');
+    body.setAttribute('aria-live', 'polite');
+    body.textContent = message;
+    body.style.lineHeight = '1.7';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'button button-primary';
+    button.textContent = options.buttonText || 'إغلاق';
+    button.hidden = !options.showButton;
+    button.addEventListener('click', () => {
+      overlay.remove();
+      if (typeof options.onClose === 'function') options.onClose();
+    });
+    card.append(heading, body, button);
+    overlay.append(card);
+    document.body.append(overlay);
+    if (options.showButton) button.focus();
+    return {
+      update(nextTitle, nextMessage, showButton = false, buttonText = 'إغلاق', onClose = null) {
+        heading.textContent = nextTitle;
+        body.textContent = nextMessage;
+        button.textContent = buttonText;
+        button.hidden = !showButton;
+        button.onclick = () => { overlay.remove(); if (typeof onClose === 'function') onClose(); };
+        if (showButton) button.focus();
+      },
+      close() { overlay.remove(); }
+    };
+  }
+
   let creatorTab = 'videos';
   let creatorUploadOpen = false;
   let creatorCameraStream = null;
@@ -485,12 +531,14 @@
       if (!file || !allowed[file.type]) { messageSocial('اختر فيديو MP4 أو WebM أو MOV.'); return; }
       if (file.size>50*1024*1024) { messageSocial('حجم الفيديو يتجاوز 50 ميغابايت.'); return; }
       const button=document.getElementById('creator-video-submit'); button.disabled=true; button.textContent='جارٍ الرفع…';
+      const uploadStatus = showCreatorUploadStatus('جارٍ رفع الفيديو', 'يتم الآن رفع الملف بأمان. اترك الصفحة مفتوحة حتى يكتمل الرفع.');
       let path='';
       try {
         const id=window.crypto?.randomUUID?.(); if (!id) throw new Error('Secure random IDs unavailable');
         path=user.id+'/'+id+'.'+allowed[file.type];
         const {error: uploadError}=await supabase.storage.from('video-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
         if (uploadError) throw uploadError;
+        uploadStatus.update('تم رفع الملف', 'جارٍ حفظ طلب النشر وإرساله إلى مراجعة الإدارة.');
         let previewPath = null;
         try {
           const previewBlob = await captureVideoPreview(file);
@@ -507,8 +555,21 @@
           if (previewPath) await supabase.storage.from('video-originals').remove([previewPath]);
           throw rowError;
         }
-        creatorUploadOpen=false; await renderCreatorProfile('videos'); window.XLiveApp?.showToast('تم رفع المقطع وإرساله للمراجعة. سيظهر للعامة بعد الموافقة.');
-      } catch (error) { const f=document.getElementById('creator-feedback'); if (f) f.textContent='تعذر رفع الفيديو. تحقق من إعدادات التخزين والصلاحيات وحجم الملف.'; console.error('XLive creator video upload error',error); if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; } }
+        creatorUploadOpen=false;
+        uploadStatus.update('تم الرفع بنجاح — بانتظار موافقة الإدارة', 'تم حفظ الفيديو وإرساله للمراجعة. سيظهر في المكان الذي اخترته فور موافقة الإدارة.', true, 'العودة إلى الصفحة الشخصية', () => { renderCreatorProfile('videos'); });
+        const f=document.getElementById('creator-feedback'); if (f) f.textContent='';
+      } catch (error) {
+        console.error('XLive creator video upload error',error);
+        const message = error?.message || error?.error_description || '';
+        const friendly = /row level security|permission|not authorized|unauthorized|403/i.test(message)
+          ? 'فشل الرفع بسبب صلاحيات التخزين أو قاعدة البيانات. لم يتم إرسال الفيديو للمراجعة.'
+          : /payload|too large|413|size/i.test(message)
+            ? 'تعذر الرفع لأن الملف أكبر من الحد المسموح أو رفضه الخادم.'
+            : 'تعذر رفع الفيديو أو حفظ طلب المراجعة. تحقق من الاتصال والصلاحيات ثم حاول مجدداً.';
+        uploadStatus.update('لم يكتمل رفع الفيديو', friendly, true, 'العودة والمحاولة مجدداً', () => { const currentButton=document.getElementById('creator-video-submit'); if(currentButton){currentButton.disabled=false;currentButton.textContent='رفع وإرسال للمراجعة';} });
+        const f=document.getElementById('creator-feedback'); if (f) f.textContent=friendly;
+        if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; }
+      }
       return;
     }
     if (event.target.id === 'creator-live-form') {
