@@ -389,13 +389,25 @@
   async function showAccountApprovalState(supabase, justRegistered, preserveRoute = false) {
     const current = user || (await supabase.auth.getUser()).data?.user;
     if (!current) return;
+    // Administrators must never be trapped by a missing/stale profile approval row.
+    const isAdmin = current.app_metadata?.role === 'admin' || String(current.email || '').trim().toLowerCase() === 'xlive18.official@gmail.com';
+    if (isAdmin) {
+      if (!preserveRoute) {
+        feedback(justRegistered ? 'تم تسجيل الحساب الإداري.' : 'تم تسجيل الدخول.');
+        window.XLiveApp?.navigate('home');
+      } else {
+        document.body.classList.remove('auth-only');
+        window.XLiveApp?.restoreCurrentRoute();
+      }
+      return;
+    }
     const { data: profile, error } = await supabase.from('profiles').select('account_status').eq('id', current.id).maybeSingle();
     if (error || !profile) {
-      feedback('تم إنشاء الحساب، لكن تعذر قراءة حالة الموافقة. لا يمكن المتابعة قبل التحقق من حالة الحساب.');
+      feedback('تعذر التحقق من حالة الحساب بسبب مشكلة في ملف المستخدم. أعد المحاولة، وإذا استمرت المشكلة تواصل مع الإدارة.');
       console.error('XLive account approval status lookup failed', error);
       return;
     }
-    if (profile.account_status === 'approved' || current.app_metadata?.role === 'admin' || String(current.email||'').toLowerCase() === 'xlive18.official@gmail.com') {
+    if (profile.account_status === 'approved') {
       if (!preserveRoute) {
         feedback(justRegistered ? 'تمت الموافقة على الحساب.' : 'تم تسجيل الدخول.');
         window.XLiveApp?.navigate('home');
