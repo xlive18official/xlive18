@@ -513,3 +513,12 @@ test('hidden Syrian phone field does not block sign-in form submission', () => {
   assert.match(setMode, /phoneInput\.disabled = mode !== 'signup'/);
   assert.match(setMode, /phoneInput\.required = mode === 'signup'/);
 });
+
+test('video upload shows an in-site progress and pending-review modal, with visible failure feedback', () => {
+  assert.match(auth, /function showCreatorUploadStatus\(/);
+  assert.match(auth, /جارٍ رفع الفيديو/);
+  assert.match(auth, /تم الرفع بنجاح — بانتظار موافقة الإدارة/);
+  assert.match(auth, /لم يكتمل رفع الفيديو/);
+  assert.match(auth, /status:'pending',visibility,is_paid:false/);
+  assert.match(html, /auth\.js\?v=20261021-08/);
+});
