@@ -255,15 +255,16 @@
     if (client) return client;
     if (!config?.url || !config?.key || !window.supabase?.createClient) return null;
     client = window.supabase.createClient(config.url, config.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
-    client.auth.getSession().then(({data}) => {
+    client.auth.getSession().then(async ({data}) => {
       user = data?.session?.user || null;
       authReady = true;
       const signoutButton = document.getElementById('auth-signout');
       if (signoutButton) signoutButton.hidden = !user;
       if (passwordRecoveryActive) return;
       if (user) document.body.classList.remove('auth-only');
-      // Re-evaluate the URL after the session is known; never force the homepage here.
-      window.XLiveApp?.restoreCurrentRoute();
+      // Check approval before restoring any protected route after a page refresh.
+      if (user && !passwordRecoveryActive) await showAccountApprovalState(client, false, true);
+      else window.XLiveApp?.restoreCurrentRoute();
     }).catch(() => {
       authReady = true;
       window.XLiveApp?.restoreCurrentRoute();
@@ -281,8 +282,9 @@
         window.XLiveApp?.navigate('profile');
         return;
       }
+      if (event === 'SIGNED_IN') return; // The signup/signin handler checks approval before navigation.
       if (user) document.body.classList.remove('auth-only');
-      // INITIAL_SESSION and SIGNED_IN must not replace the URL-selected page.
+      // Session refreshes preserve the current route; approval is checked on initial session restore.
       window.XLiveApp?.restoreCurrentRoute();
     });
     subscription = result?.data?.subscription || null;
@@ -384,6 +386,39 @@
       feedback(error ? 'تعذر إرسال تعليمات الاستعادة. تحقق من إعدادات البريد.' : 'إذا كان البريد مسجلاً، فستصلك تعليمات الاستعادة.');
     }
   });
+  async function showAccountApprovalState(supabase, justRegistered, preserveRoute = false) {
+    const current = user || (await supabase.auth.getUser()).data?.user;
+    if (!current) return;
+    const { data: profile, error } = await supabase.from('profiles').select('account_status').eq('id', current.id).maybeSingle();
+    if (error || !profile) {
+      feedback('تم إنشاء الحساب، لكن تعذر قراءة حالة الموافقة. لا يمكن المتابعة قبل التحقق من حالة الحساب.');
+      console.error('XLive account approval status lookup failed', error);
+      return;
+    }
+    if (profile.account_status === 'approved' || current.app_metadata?.role === 'admin' || String(current.email||'').toLowerCase() === 'xlive18.official@gmail.com') {
+      if (!preserveRoute) {
+        feedback(justRegistered ? 'تمت الموافقة على الحساب.' : 'تم تسجيل الدخول.');
+        window.XLiveApp?.navigate('home');
+      } else {
+        document.body.classList.remove('auth-only');
+        window.XLiveApp?.restoreCurrentRoute();
+      }
+      return;
+    }
+    document.body.classList.add('auth-only');
+    root.innerHTML = '<section class="approval-wait-screen"><div class="approval-wait-mark" aria-hidden="true">◷</div><p class="eyebrow">XLIVE 18 / ACCOUNT REVIEW</p><h1>' + (profile.account_status === 'rejected' ? 'تعذّر قبول الحساب' : 'حسابك بانتظار الموافقة') + '</h1><p>' + (profile.account_status === 'rejected' ? 'لم تتم الموافقة على إنشاء الحساب. تواصل مع الإدارة إذا كنت تعتقد أن هذا خطأ.' : 'تم استلام طلب إنشاء حسابك بنجاح. ستتمكن من دخول الصفحة الرئيسية بعد موافقة الإدارة على الحساب.') + '</p><p class="approval-wait-status"><span class="status-dot"></span>' + (profile.account_status === 'rejected' ? 'مرفوض' : 'قيد المراجعة') + '</p><button type="button" class="button button-secondary" id="approval-check-status">تحقق من حالة الطلب</button><button type="button" class="button button-secondary" id="approval-signout">تسجيل الخروج</button><p id="approval-feedback" class="auth-feedback" role="status" aria-live="polite"></p></section>';
+    document.getElementById('approval-check-status')?.addEventListener('click', async () => {
+      const note = document.getElementById('approval-feedback');
+      if (note) note.textContent = 'جارٍ التحقق…';
+      await showAccountApprovalState(supabase, false);
+    });
+    document.getElementById('approval-signout')?.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      user = null;
+      window.XLiveApp?.navigate('profile');
+    });
+  }
+
   document.addEventListener('submit', async event => {
     if (event.target.id === 'password-update-form') {
       event.preventDefault();
@@ -550,12 +585,12 @@
         const displayName = document.getElementById('auth-name').value.trim();
         const {data,error} = await supabase.auth.signUp({email,password,options:{data:{display_name:displayName,age_confirmed:true,phone_number:phoneNumber}}});
         if (error) throw error;
-        if (data.session) { feedback('تم إنشاء الحساب وتسجيل الدخول.'); window.XLiveApp?.navigate('home'); } else { feedback('تم إنشاء الحساب، لكن لم تبدأ جلسة الدخول تلقائياً. تأكد من تعطيل تأكيد البريد في إعدادات Supabase ثم حاول مجدداً.'); }
+        if (data.session) { user = data.session.user; await showAccountApprovalState(supabase, true); } else { feedback('تم إنشاء الحساب. إذا طُلب منك تأكيد البريد، أكّده ثم سجّل الدخول؛ سيبقى الحساب بانتظار موافقة الإدارة.'); }
       } else {
-        const {error} = await supabase.auth.signInWithPassword({email,password});
+        const {data,error} = await supabase.auth.signInWithPassword({email,password});
         if (error) throw error;
-        feedback('تم تسجيل الدخول.');
-        window.XLiveApp?.navigate('home');
+        user = data.user;
+        await showAccountApprovalState(supabase, false);
       }
     } catch (error) {
       const message = String(error?.message || '');
