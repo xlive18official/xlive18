@@ -4,8 +4,6 @@
   const config = window.XLIVE_SUPABASE;
   const MAX_FILES = 20;
   const MAX_BYTES = 50 * 1024 * 1024;
-  const TARGET_DURATION_MIN = 9.5;
-  const TARGET_DURATION_MAX = 10.5;
   let client = null;
   let busy = false;
 
@@ -136,16 +134,10 @@
       const tooLarge = files.find(file => file.size > MAX_BYTES);
       if (tooLarge) throw new Error('حجم كل مقطع يجب ألا يتجاوز 50 ميغابايت.');
 
-      say('جارٍ فحص المدة والاتجاه لكل المقاطع…');
+      say('جارٍ التحقق من ملفات الفيديو…');
       const inspected = [];
       for (const file of files) {
         const meta = await inspectVideo(file);
-        if (meta.duration < TARGET_DURATION_MIN || meta.duration > TARGET_DURATION_MAX) {
-          throw new Error('المقطع "' + file.name + '" ليس قريباً من 10 ثوانٍ (المسموح 9.5–10.5 ثانية).');
-        }
-        if (meta.height <= meta.width) {
-          throw new Error('المقطع "' + file.name + '" ليس عمودياً؛ يجب أن يكون ارتفاعه أكبر من عرضه.');
-        }
         inspected.push({ file, meta });
       }
 
@@ -219,14 +211,16 @@
   }
 
   document.addEventListener('click', event => {
-    const button = event.target.closest('[data-batch-video-upload]');
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const button = target?.closest('[data-batch-video-upload]');
     if (!button) return;
     const input = button.parentElement?.querySelector('[data-batch-video-files]');
     input?.click();
   });
 
   document.addEventListener('change', event => {
-    const input = event.target.closest('[data-batch-video-files]');
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const input = target?.closest('[data-batch-video-files]');
     if (!input) return;
     const button = input.parentElement?.querySelector('[data-batch-video-upload]');
     const status = document.querySelector('[data-batch-video-status]');
