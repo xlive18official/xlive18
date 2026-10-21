@@ -6,6 +6,7 @@ const html = readFileSync('index.html', 'utf8');
 const app = readFileSync('app.js', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
 const admin = readFileSync('admin.js', 'utf8');
+const batchUpload = readFileSync('batch-video-upload.js', 'utf8');
 const schema = readFileSync('supabase/migrations/0001_initial_schema.sql', 'utf8');
 const storage = readFileSync('supabase/migrations/0002_private_video_storage.sql', 'utf8');
 const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
