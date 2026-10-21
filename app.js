@@ -72,10 +72,12 @@
   }
 
   function showRoute(view, extra = '', scroll = false) {
-    // Wait for auth.js and the persisted session before deciding whether a protected route is allowed.
+    // Do not render any route until auth.js has restored the persisted session.
+    // This prevents the loading -> profile -> sign-in flash on a cold page load.
+    if (!window.XLiveAuth) return;
+    if (window.XLiveAuth.isReady && !window.XLiveAuth.isReady()) return;
+    // Wait for the persisted session before deciding whether a protected route is allowed.
     if (view !== 'profile' && view !== 'home') {
-      if (!window.XLiveAuth) return;
-      if (window.XLiveAuth.isReady && !window.XLiveAuth.isReady()) return;
       if (!window.XLiveAuth.getUser()) {
         view = 'profile';
         extra = '';
