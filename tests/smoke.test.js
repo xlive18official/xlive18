@@ -341,8 +341,8 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261021-01'));
-  assert.ok(html.includes('app.js?v=20261021-01'));
+  assert.ok(html.includes('styles.css?v=20261021-02'));
+  assert.ok(html.includes('app.js?v=20261021-02'));
 });
 
 
@@ -457,6 +457,6 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-01/);
-  assert.match(html, /admin.js\?v=20261021-01/);
+  assert.match(html, /auth.js\?v=20261021-02/);
+  assert.match(html, /admin.js\?v=20261021-02/);
 });

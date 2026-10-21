@@ -729,3 +729,11 @@ img, video, iframe, canvas, svg {
 @media(max-width:360px){
   .clips-gallery-card .clip-card-body>strong{font-size:8px!important;height:12px;max-height:12px}
 }
+
+
+/* Syrian phone signup: fixed country code beside a 10-digit local number. */
+.phone-input-group{display:flex;align-items:stretch;gap:8px;width:100%;direction:ltr}
+.phone-country-code{display:flex;align-items:center;justify-content:center;flex:0 0 66px;min-height:46px;padding:0 10px;border:1px solid #35353d;border-radius:10px;background:#1b1b21;color:var(--text);font-weight:700;letter-spacing:.3px}
+.phone-input-group #auth-phone{flex:1;min-width:0;width:100%;text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
+.phone-input-group #auth-phone::placeholder{color:#777781;letter-spacing:.4px}
+@media(max-width:360px){.phone-input-group{gap:6px}.phone-country-code{flex-basis:58px;padding-inline:7px}}
