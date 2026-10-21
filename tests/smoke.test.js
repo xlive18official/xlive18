@@ -457,7 +457,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-06/);
+  assert.match(html, /auth.js\?v=20261021-07/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -500,4 +500,11 @@ test('startup waits for auth session restoration before rendering any route', ()
   assert.match(app, /function showRoute\(view, extra = '', scroll = false\) \{[\s\S]*?if \(!window\.XLiveAuth\) return;[\s\S]*?if \(window\.XLiveAuth\.isReady && !window\.XLiveAuth\.isReady\(\)\) return;/);
   assert.match(auth, /client\.auth\.getSession\(\)\.then\(async \(\{data\}\) => \{[\s\S]*?authReady = true;[\s\S]*?window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
   assert.doesNotMatch(auth, /setTimeout\(renderProfile, 0\)/);
+});
+
+
+test('hidden Syrian phone field does not block sign-in form submission', () => {
+  const setMode = auth.slice(auth.indexOf('function setMode('), auth.indexOf('function escapeHtml('));
+  assert.match(setMode, /phoneInput\.disabled = mode !== 'signup'/);
+  assert.match(setMode, /phoneInput\.required = mode === 'signup'/);
 });

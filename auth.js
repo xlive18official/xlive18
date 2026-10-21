@@ -21,11 +21,17 @@
     const name = document.getElementById('auth-name-wrap');
     const age = document.getElementById('auth-age-wrap');
     const phone = document.getElementById('auth-phone-wrap');
+    const phoneInput = document.getElementById('auth-phone');
     const submit = document.getElementById('auth-submit');
     const reset = document.getElementById('auth-reset');
     if (name) name.hidden = mode !== 'signup';
     if (age) age.hidden = mode !== 'signup';
     if (phone) phone.hidden = mode !== 'signup';
+    // A hidden required input still blocks native form submission. Disable it on sign-in.
+    if (phoneInput) {
+      phoneInput.disabled = mode !== 'signup';
+      phoneInput.required = mode === 'signup';
+    }
     if (submit) submit.textContent = mode === 'signup' ? 'إنشاء حساب' : 'تسجيل الدخول';
     if (reset) reset.hidden = mode !== 'signin';
     feedback('');
