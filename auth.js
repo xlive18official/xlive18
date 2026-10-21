@@ -57,6 +57,28 @@
   }
 
 
+
+  function openCreatorVideoUploadModal() {
+    document.getElementById('creator-video-upload-modal')?.remove();
+    const overlay=document.createElement('div'); overlay.id='creator-video-upload-modal'; overlay.className='creator-upload-overlay';
+    overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true'); overlay.setAttribute('aria-labelledby','creator-video-modal-title');
+    overlay.innerHTML='<section class="creator-upload-dialog"><button type="button" class="creator-upload-close" data-creator-video-cancel aria-label="إغلاق">×</button><p class="eyebrow">XLIVE 18 / VIDEO UPLOAD</p><h2 id="creator-video-modal-title">إضافة مقطع</h2><p class="creator-upload-intro">اختر الفيديو من جهازك، ثم أرسله للمراجعة.</p><form id="creator-video-upload-form" class="creator-video-modal-form"><div class="field"><label for="creator-video-title">اسم العرض</label><input id="creator-video-title" maxlength="120" placeholder="اكتب اسم المقطع" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3" placeholder="اكتب وصفاً للمقطع (اختياري)"></textarea></div><input id="creator-video-file" class="creator-video-file-input" type="file" accept="video/mp4,video/webm,video/quicktime"><button type="button" class="button button-secondary creator-pick-video" data-creator-video-pick>▣ اختيار فيديو من الجوال</button><p class="field-help creator-video-file-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p><div id="creator-video-preview-wrap" class="creator-video-preview-wrap" hidden><video id="creator-video-preview" controls playsinline preload="metadata"></video><p id="creator-video-file-details" class="field-help"></p></div><button class="button button-primary creator-video-submit" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><button type="button" class="creator-upload-cancel-text" data-creator-video-cancel>إلغاء</button></form></section>';
+    document.body.append(overlay); overlay.querySelector('#creator-video-title')?.focus();
+  }
+  function uploadVideoWithProgress(file,path,token,onProgress) {
+    return new Promise((resolve,reject)=>{
+      const xhr=new XMLHttpRequest(), base=String(config?.url||'').replace(/\/+$/,'');
+      const encoded=path.split('/').map(encodeURIComponent).join('/');
+      xhr.open('POST',base+'/storage/v1/object/video-originals/'+encoded);
+      xhr.setRequestHeader('Authorization','Bearer '+token); xhr.setRequestHeader('apikey',config.key);
+      xhr.setRequestHeader('Content-Type',file.type); xhr.setRequestHeader('x-upsert','false'); xhr.setRequestHeader('cache-control','3600');
+      xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(e.loaded,e.total);};
+      xhr.onerror=()=>reject(new Error('تعذر الاتصال بخدمة رفع الفيديو.'));
+      xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300){resolve();return;}let msg='';try{const j=JSON.parse(xhr.responseText);msg=j.message||j.error||'';}catch(_){}reject(new Error(msg||('فشل رفع الملف (HTTP '+xhr.status+').')));};
+      xhr.send(file);
+    });
+  }
+
   function showCreatorUploadStatus(title, message, options = {}) {
     document.getElementById('creator-upload-status-modal')?.remove();
     const overlay = document.createElement('div');
@@ -86,11 +108,12 @@
       overlay.remove();
       if (typeof options.onClose === 'function') options.onClose();
     });
-    card.append(heading, body, button);
+    const progress=document.createElement('div'); progress.className='creator-upload-progress-wrap'; progress.innerHTML='<div class="creator-upload-progress-meta"><span id="creator-upload-progress-size">0%</span><span id="creator-upload-progress-eta">جارٍ تجهيز الرفع…</span></div><div class="creator-upload-progress-track" role="progressbar" aria-label="تقدم رفع الفيديو" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="creator-upload-progress-bar"></span></div>'; card.append(heading,body,progress,button);
     overlay.append(card);
     document.body.append(overlay);
     if (options.showButton) button.focus();
     return {
+      updateProgress(percent,sizeText,etaText) { const bar=overlay.querySelector('#creator-upload-progress-bar'), track=overlay.querySelector('.creator-upload-progress-track'), size=overlay.querySelector('#creator-upload-progress-size'), eta=overlay.querySelector('#creator-upload-progress-eta'); const n=Math.max(0,Math.min(100,Math.round(percent||0))); if(bar)bar.style.width=n+'%'; if(track)track.setAttribute('aria-valuenow',String(n)); if(size)size.textContent=sizeText||n+'%'; if(eta)eta.textContent=etaText||''; },
       update(nextTitle, nextMessage, showButton = false, buttonText = 'إغلاق', onClose = null) {
         heading.textContent = nextTitle;
         body.textContent = nextMessage;
@@ -196,8 +219,8 @@
         return '<article class="clip-card ' + (locked ? 'clip-card-private' : '') + '">' + media + '<div class="clip-card-body"><div class="clip-card-heading"><strong>' + escapeHtml(v.title) + '</strong><span class="status-pill">' + status + '</span></div>' + (isOwnProfile ? '<div class="creator-clip-settings"><button type="button" class="creator-clip-menu-button" data-video-menu="' + v.id + '" aria-label="تخصيص ظهور المقطع" aria-expanded="false">⋮</button><div class="creator-clip-menu" data-video-menu-panel="' + v.id + '" hidden><p>مكان ظهور المقطع</p><button type="button" data-video-visibility="public" data-video-id="' + v.id + '" ' + (v.visibility === 'public' ? 'aria-current="true"' : '') + '>🌐 عام</button><button type="button" data-video-visibility="private" data-video-id="' + v.id + '" ' + (v.visibility === 'private' ? 'aria-current="true"' : '') + '>🔒 خاص</button><button type="button" data-video-visibility="profile" data-video-id="' + v.id + '" ' + (v.visibility === 'profile' ? 'aria-current="true"' : '') + '>◎ الصفحة الشخصية فقط</button></div></div>' : '') + (locked ? '<p>هذا المقطع خاص ولا يمكن تشغيله.</p>' : '<p>' + escapeHtml(v.description || '') + '</p>') + '<small>' + shortDate(v.created_at) + '</small></div></article>';
       }));
       panel.innerHTML = '<div class="creator-panel-heading"><div><h3>' + (isOwnProfile ? 'مقاطعك' : 'المقاطع') + '</h3><p>' + (isOwnProfile ? 'اختر مكان ظهور كل مقطع؛ النشر للعامة يتطلب الموافقة.' : 'المقاطع العامة ومقاطع الملف الشخصي تظهر بعد الموافقة. المقاطع الخاصة تظهر بقفل فقط.') + '</p></div>' + (isOwnProfile ? '<button class="button button-primary creator-plus" type="button" data-creator-upload="video" aria-label="إضافة مقطع">＋ إضافة مقطع</button>' : '') + '</div>' +
-        (isOwnProfile && creatorUploadOpen ? '<form id="creator-video-upload-form" class="simple-panel form-stack"><div class="field"><label for="creator-video-title">عنوان المقطع</label><input id="creator-video-title" maxlength="120" required></div><div class="field"><label for="creator-video-description">الوصف</label><textarea id="creator-video-description" maxlength="2000" rows="3"></textarea></div><fieldset class="field visibility-options"><legend>مين بيقدر يشوف المقطع؟</legend><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="public" checked><span class="visibility-check" aria-hidden="true"></span><span><strong>المقطع عام</strong><small>بيظهر بالصفحة الرئيسية وبالملف الشخصي بعد الموافقة.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="private"><span class="visibility-check" aria-hidden="true"></span><span><strong>خاص</strong><small>أنت فقط بتقدر تشغّله؛ بيظهر للزوار كعنصر مقفول.</small></span></label><label class="visibility-option"><input type="radio" name="creator-video-visibility" value="profile"><span class="visibility-check" aria-hidden="true"></span><span><strong>فقط بالملف الشخصي</strong><small>بيظهر بملفك بعد الموافقة، وما بيظهر بالرئيسية.</small></span></label></fieldset><div class="field"><label for="creator-video-file">ملف الفيديو</label><input id="creator-video-file" type="file" accept="video/mp4,video/webm,video/quicktime" required><p class="field-help">MP4 أو WebM أو MOV — حتى 50 ميغابايت.</p></div><button class="button button-primary" id="creator-video-submit" type="submit">رفع وإرسال للمراجعة</button><p id="creator-feedback" class="auth-feedback" role="status" aria-live="polite"></p></form>' : '') +
-        (cards.length ? '<div class="creator-media-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>' + (isOwnProfile ? 'لسه ما نشرت مقاطع' : 'ما في مقاطع ظاهرة') + '</h3><p>' + (isOwnProfile ? 'اضغط «إضافة مقطع» لرفع أول فيديو. سيبقى قيد المراجعة قبل نشره.' : 'ما في مقاطع متاحة للعرض في هذا الملف الشخصي حالياً.') + '</p></div>');
+        '' +
+                (cards.length ? '<div class="creator-media-grid">' + cards.join('') + '</div>' : '<div class="empty-panel"><h3>' + (isOwnProfile ? 'لسه ما نشرت مقاطع' : 'ما في مقاطع ظاهرة') + '</h3><p>' + (isOwnProfile ? 'اضغط «إضافة مقطع» لرفع أول فيديو. سيبقى قيد المراجعة قبل نشره.' : 'ما في مقاطع متاحة للعرض في هذا الملف الشخصي حالياً.') + '</p></div>');
     } else if (creatorTab === 'photos') {
       const {data: photos, error} = await supabase.from('photos').select('id,title,description,storage_path,status,created_at').eq('owner_id', user.id).order('created_at',{ascending:false}).limit(100);
       if (error) { panel.innerHTML = '<div class="empty-panel"><h3>تعذر تحميل الصور</h3><p>تأكد من تطبيق ترحيل قاعدة البيانات الخاص بالصور.</p></div>'; return; }
@@ -250,8 +273,12 @@
     const tab = event.target.closest('[data-creator-tab]');
     if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab, creatorProfileTarget || user?.id); }
     const clickTarget = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const pickVideo=clickTarget?.closest('[data-creator-video-pick]');
+    if(pickVideo){event.preventDefault();document.getElementById('creator-video-file')?.click();return;}
+    const cancelVideo=clickTarget?.closest('[data-creator-video-cancel]');
+    if(cancelVideo){event.preventDefault();const preview=document.getElementById('creator-video-preview');if(preview?.dataset.objectUrl)URL.revokeObjectURL(preview.dataset.objectUrl);preview?.removeAttribute('src');preview?.load();document.getElementById('creator-video-upload-modal')?.remove();return;}
     const upload = clickTarget?.closest('[data-creator-upload]');
-    if (upload) { event.preventDefault(); event.stopPropagation(); creatorUploadOpen = !creatorUploadOpen; await renderCreatorProfile(upload.dataset.creatorUpload === 'photo' ? 'photos' : 'videos'); return; }
+    if(upload){event.preventDefault();event.stopPropagation();if(upload.dataset.creatorUpload==='video'){openCreatorVideoUploadModal();return;}creatorUploadOpen=!creatorUploadOpen;await renderCreatorProfile('photos');return;}
     const camera = event.target.closest('[data-creator-camera]');
     if (camera) {
       event.preventDefault();
@@ -486,6 +513,17 @@
     });
   }
 
+
+  document.addEventListener('change',event=>{
+    const input=event.target;if(!(input instanceof HTMLInputElement)||input.id!=='creator-video-file')return;
+    const file=input.files?.[0],wrap=document.getElementById('creator-video-preview-wrap'),preview=document.getElementById('creator-video-preview'),details=document.getElementById('creator-video-file-details');
+    if(!file){if(wrap)wrap.hidden=true;return;}
+    if(!['video/mp4','video/webm','video/quicktime'].includes(file.type)){input.value='';window.XLiveApp?.showToast('اختر فيديو بصيغة MP4 أو WebM أو MOV.');return;}
+    if(file.size>50*1024*1024){input.value='';window.XLiveApp?.showToast('حجم الفيديو يتجاوز 50 ميغابايت.');return;}
+    if(preview){if(preview.dataset.objectUrl)URL.revokeObjectURL(preview.dataset.objectUrl);preview.dataset.objectUrl=URL.createObjectURL(file);preview.src=preview.dataset.objectUrl;preview.load();}
+    if(details)details.textContent=file.name+' · '+(file.size/(1024*1024)).toFixed(2)+' ميغابايت';if(wrap)wrap.hidden=false;
+  });
+
   document.addEventListener('submit', async event => {
     if (event.target.id === 'password-update-form') {
       event.preventDefault();
@@ -526,19 +564,30 @@
       event.preventDefault();
       const supabase = ensureClient(); await syncCurrentUser(supabase);
       if (!supabase || !user) { messageSocial('سجّل الدخول أولاً.'); return; }
-      const title=document.getElementById('creator-video-title')?.value.trim(), description=document.getElementById('creator-video-description')?.value.trim() || '', file=document.getElementById('creator-video-file')?.files?.[0], visibility=document.querySelector('input[name="creator-video-visibility"]:checked')?.value || 'public';
+      const title=document.getElementById('creator-video-title')?.value.trim(), description=document.getElementById('creator-video-description')?.value.trim() || '', file=document.getElementById('creator-video-file')?.files?.[0], visibility='public';
       const allowed={'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
       if (!title || title.length>120 || description.length>2000) { messageSocial('تحقق من العنوان والوصف.'); return; }
       if (!file || !allowed[file.type]) { messageSocial('اختر فيديو MP4 أو WebM أو MOV.'); return; }
       if (file.size>50*1024*1024) { messageSocial('حجم الفيديو يتجاوز 50 ميغابايت.'); return; }
-      const button=document.getElementById('creator-video-submit'); button.disabled=true; button.textContent='جارٍ الرفع…';
-      const uploadStatus = showCreatorUploadStatus('جارٍ رفع الفيديو', 'يتم الآن رفع الملف بأمان. اترك الصفحة مفتوحة حتى يكتمل الرفع.');
+      const button=document.getElementById('creator-video-submit');button.disabled=true;button.textContent='جارٍ الرفع…';
+      const sessionResult=await supabase.auth.getSession(),accessToken=sessionResult.data?.session?.access_token;
+      if(sessionResult.error||!accessToken){button.disabled=false;button.textContent='رفع وإرسال للمراجعة';messageSocial('انتهت جلسة الدخول. سجّل الدخول مجدداً ثم حاول.');return;}
+      document.getElementById('creator-video-upload-modal')?.remove();
+      const uploadStatus=showCreatorUploadStatus('جارٍ رفع الفيديو','جارٍ إرسال الملف بأمان. اترك الصفحة مفتوحة حتى يكتمل الرفع.');
+      const totalBytes=file.size;let lastLoaded=0,lastTick=Date.now(),smoothedRate=0;
+      uploadStatus.updateProgress(0,(totalBytes/(1024*1024)).toFixed(2)+' ميغابايت','جارٍ تجهيز الرفع…');
       let path='';
       try {
         const id=window.crypto?.randomUUID?.(); if (!id) throw new Error('Secure random IDs unavailable');
         path=user.id+'/'+id+'.'+allowed[file.type];
-        const {error: uploadError}=await supabase.storage.from('video-originals').upload(path,file,{contentType:file.type,upsert:false,cacheControl:'3600'});
-        if (uploadError) throw uploadError;
+        await uploadVideoWithProgress(file,path,accessToken,(loaded,total)=>{
+          const now=Date.now(),elapsed=Math.max(1,now-lastTick)/1000,rate=Math.max(0,loaded-lastLoaded)/elapsed;
+          if(rate>0)smoothedRate=smoothedRate?smoothedRate*.65+rate*.35:rate;
+          lastLoaded=loaded;lastTick=now;const pct=total?loaded/total*100:0,remaining=smoothedRate>0?Math.ceil((total-loaded)/smoothedRate):null;
+          const eta=pct>=100?'اكتمل نقل الملف، جارٍ حفظ طلب المراجعة…':remaining===null?'جارٍ حساب الوقت المتبقي…':'الوقت المتبقي تقريباً: '+(remaining>=60?Math.floor(remaining/60)+' د '+(remaining%60)+' ث':remaining+' ث');
+          uploadStatus.updateProgress(pct,(loaded/(1024*1024)).toFixed(2)+' / '+(total/(1024*1024)).toFixed(2)+' ميغابايت',eta);
+        });
+        uploadStatus.updateProgress(100,(totalBytes/(1024*1024)).toFixed(2)+' / '+(totalBytes/(1024*1024)).toFixed(2)+' ميغابايت','اكتمل نقل الملف، جارٍ حفظ طلب المراجعة…');
         uploadStatus.update('تم رفع الملف', 'جارٍ حفظ طلب النشر وإرساله إلى مراجعة الإدارة.');
         let previewPath = null;
         try {
@@ -557,7 +606,8 @@
           throw rowError;
         }
         creatorUploadOpen=false;
-        uploadStatus.update('تم الرفع بنجاح — بانتظار موافقة الإدارة', 'تم حفظ الفيديو وإرساله للمراجعة. سيظهر في المكان الذي اخترته فور موافقة الإدارة.', true, 'العودة إلى الصفحة الشخصية', () => { renderCreatorProfile('videos'); });
+        uploadStatus.updateProgress(100,(totalBytes/(1024*1024)).toFixed(2)+' / '+(totalBytes/(1024*1024)).toFixed(2)+' ميغابايت','اكتمل الرفع');
+        uploadStatus.update('نجح الرفع — بانتظار الموافقة','تم إرسال المقطع إلى الإدارة للمراجعة. سيظهر في ملفك بعد الموافقة.',true,'خروج / رجوع للملف الشخصي',()=>{renderCreatorProfile('videos');});
         const f=document.getElementById('creator-feedback'); if (f) f.textContent='';
       } catch (error) {
         console.error('XLive creator video upload error',error);
@@ -567,7 +617,7 @@
           : /payload|too large|413|size/i.test(message)
             ? 'تعذر الرفع لأن الملف أكبر من الحد المسموح أو رفضه الخادم.'
             : 'تعذر رفع الفيديو أو حفظ طلب المراجعة. تحقق من الاتصال والصلاحيات ثم حاول مجدداً.';
-        uploadStatus.update('لم يكتمل رفع الفيديو', friendly, true, 'العودة والمحاولة مجدداً', () => { const currentButton=document.getElementById('creator-video-submit'); if(currentButton){currentButton.disabled=false;currentButton.textContent='رفع وإرسال للمراجعة';} });
+        uploadStatus.update('لم يكتمل رفع الفيديو',friendly,true,'رجوع والمحاولة مجدداً',()=>{openCreatorVideoUploadModal();});
         const f=document.getElementById('creator-feedback'); if (f) f.textContent=friendly;
         if (document.getElementById('creator-video-submit')) { button.disabled=false; button.textContent='رفع وإرسال للمراجعة'; }
       }
