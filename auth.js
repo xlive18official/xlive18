@@ -249,8 +249,9 @@
     }
     const tab = event.target.closest('[data-creator-tab]');
     if (tab) { event.preventDefault(); creatorUploadOpen = false; if (creatorCameraStream) { creatorCameraStream.getTracks().forEach(track => track.stop()); creatorCameraStream = null; } await renderCreatorProfile(tab.dataset.creatorTab, creatorProfileTarget || user?.id); }
-    const upload = event.target.closest('[data-creator-upload]');
-    if (upload) { event.preventDefault(); creatorUploadOpen = !creatorUploadOpen; await renderCreatorProfile(upload.dataset.creatorUpload === 'photo' ? 'photos' : 'videos'); return; }
+    const clickTarget = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const upload = clickTarget?.closest('[data-creator-upload]');
+    if (upload) { event.preventDefault(); event.stopPropagation(); creatorUploadOpen = !creatorUploadOpen; await renderCreatorProfile(upload.dataset.creatorUpload === 'photo' ? 'photos' : 'videos'); return; }
     const camera = event.target.closest('[data-creator-camera]');
     if (camera) {
       event.preventDefault();
