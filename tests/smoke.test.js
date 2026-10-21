@@ -462,7 +462,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-08/);
+  assert.match(html, /auth.js\?v=20261021-09/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -520,5 +520,15 @@ test('video upload shows an in-site progress and pending-review modal, with visi
   assert.match(auth, /تم الرفع بنجاح — بانتظار موافقة الإدارة/);
   assert.match(auth, /لم يكتمل رفع الفيديو/);
   assert.match(auth, /status:'pending',visibility,is_paid:false/);
-  assert.match(html, /auth\.js\?v=20261021-08/);
+  assert.match(html, /auth\.js\?v=20261021-09/);
+});
+
+
+test('creator batch uploader accepts videos of any duration and does not require portrait orientation', () => {
+  assert.doesNotMatch(batchUpload, /TARGET_DURATION_MIN|TARGET_DURATION_MAX|ليس قريباً من 10 ثوانٍ/);
+  assert.doesNotMatch(batchUpload, /ليس عمودياً/);
+  assert.match(batchUpload, /data-batch-video-upload/);
+  assert.match(batchUpload, /event\.target instanceof Element/);
+  assert.match(auth, /clickTarget\?\.closest\('\[data-creator-upload\]'\)/);
+  assert.match(html, /batch-video-upload\\.js\\?v=20261021-01/);
 });
