@@ -473,3 +473,12 @@ test('new accounts wait for admin approval before navigating home', () => {
   assert.match(migration, /account_status text not null default 'pending'/);
   assert.match(migration, /admin_set_account_status/);
 });
+
+
+test('admin login bypasses account approval lookup before profile status is queried', () => {
+  const adminBypass = auth.indexOf('const isAdmin = current.app_metadata?.role');
+  const profileLookup = auth.indexOf("from('profiles').select('account_status')", adminBypass);
+  assert.ok(adminBypass >= 0, 'admin bypass should exist');
+  assert.ok(profileLookup > adminBypass, 'admin bypass must run before profile lookup can block login');
+  assert.match(auth, /if \(isAdmin\) \{[\s\S]*?window\.XLiveApp\?\.navigate\('home'\)/);
+});
