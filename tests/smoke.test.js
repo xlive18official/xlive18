@@ -501,3 +501,10 @@ test('startup waits for auth session restoration before rendering any route', ()
   assert.match(auth, /client\.auth\.getSession\(\)\.then\(async \(\{data\}\) => \{[\s\S]*?authReady = true;[\s\S]*?window\.XLiveApp\?\.restoreCurrentRoute\(\)/);
   assert.doesNotMatch(auth, /setTimeout\(renderProfile, 0\)/);
 });
+
+
+test('hidden Syrian phone field does not block sign-in form submission', () => {
+  const setMode = auth.slice(auth.indexOf('function setMode('), auth.indexOf('function escapeHtml('));
+  assert.match(setMode, /phoneInput\.disabled = mode !== 'signup'/);
+  assert.match(setMode, /phoneInput\.required = mode === 'signup'/);
+});
