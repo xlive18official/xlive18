@@ -6,6 +6,7 @@ const html = readFileSync('index.html', 'utf8');
 const app = readFileSync('app.js', 'utf8');
 const css = readFileSync('styles.css', 'utf8');
 const admin = readFileSync('admin.js', 'utf8');
+const batchUpload = readFileSync('batch-video-upload.js', 'utf8');
 const schema = readFileSync('supabase/migrations/0001_initial_schema.sql', 'utf8');
 const storage = readFileSync('supabase/migrations/0002_private_video_storage.sql', 'utf8');
 const profilePrivacy = readFileSync('supabase/migrations/0005_restrict_private_profile_reads.sql', 'utf8');
@@ -462,7 +463,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-07/);
+  assert.match(html, /auth.js\?v=20261021-09/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -512,4 +513,23 @@ test('hidden Syrian phone field does not block sign-in form submission', () => {
   const setMode = auth.slice(auth.indexOf('function setMode('), auth.indexOf('function escapeHtml('));
   assert.match(setMode, /phoneInput\.disabled = mode !== 'signup'/);
   assert.match(setMode, /phoneInput\.required = mode === 'signup'/);
+});
+
+test('video upload shows an in-site progress and pending-review modal, with visible failure feedback', () => {
+  assert.match(auth, /function showCreatorUploadStatus\(/);
+  assert.match(auth, /جارٍ رفع الفيديو/);
+  assert.match(auth, /تم الرفع بنجاح — بانتظار موافقة الإدارة/);
+  assert.match(auth, /لم يكتمل رفع الفيديو/);
+  assert.match(auth, /status:'pending',visibility,is_paid:false/);
+  assert.match(html, /auth\.js\?v=20261021-09/);
+});
+
+
+test('creator batch uploader accepts videos of any duration and does not require portrait orientation', () => {
+  assert.doesNotMatch(batchUpload, /TARGET_DURATION_MIN|TARGET_DURATION_MAX|ليس قريباً من 10 ثوانٍ/);
+  assert.doesNotMatch(batchUpload, /ليس عمودياً/);
+  assert.match(batchUpload, /data-batch-video-upload/);
+  assert.match(batchUpload, /event\.target instanceof Element/);
+  assert.match(auth, /clickTarget\?\.closest\('\[data-creator-upload\]'\)/);
+  assert.match(html, /batch-video-upload\.js\?v=20261021-01/);
 });
