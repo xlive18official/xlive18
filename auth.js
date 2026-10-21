@@ -539,8 +539,8 @@
     const submit = document.getElementById('auth-submit');
     if (mode === 'signup' && !document.getElementById('auth-age').checked) { feedback('يجب تأكيد أن عمرك 18 عاماً أو أكثر.'); return; }
     const phoneInput = document.getElementById('auth-phone');
-    const phoneNumber = phoneInput ? phoneInput.value.replace(/[\\s()-]/g, '') : '';
-    if (mode === 'signup' && !/^\\+9639\\d{8}$/.test(phoneNumber)) { feedback('يجب إدخال رقم هاتف محمول سوري صحيح يبدأ بـ +963، مثل +9639XXXXXXXX.'); phoneInput?.focus(); return; }
+    const phoneNumber = phoneInput ? phoneInput.value.replace(/[\s()-]/g, '') : '';
+    if (mode === 'signup' && !/^\+9639\d{8}$/.test(phoneNumber)) { feedback('يجب إدخال رقم هاتف محمول سوري صحيح يبدأ بـ +963، مثل +9639XXXXXXXX.'); phoneInput?.focus(); return; }
     submit.disabled = true;
     submit.textContent = 'جارٍ التنفيذ…';
     feedback('');
