@@ -43,6 +43,11 @@ test('search is handled without injecting raw user input as HTML', () => {
   assert.match(auth, /escapeHtml\(/);
 });
 
+test('every application route except the sign-in/profile screen requires authentication', () => {
+  assert.match(app, /if \(view !== 'profile' && !window\.XLiveAuth\.getUser\(\)\)/);
+  assert.match(app, /const profileHash = routeHash\('profile'\)/);
+});
+
 test('the current SPA route is stored in the URL and restored after refresh', () => {
   assert.match(app, /function routeHash\(view, extra = ''\)/);
   assert.match(app, /function readRoute\(\)/);
