@@ -347,7 +347,7 @@ test('homepage has no stale content before app initialization and cache-busts as
   assert.doesNotMatch(html, /كل ما يهمك، في مكان واحد/);
   assert.doesNotMatch(html, /class="feature-grid"/);
   assert.match(html, /جارٍ تجهيز XLIVE 18/);
-  assert.ok(html.includes('styles.css?v=20261021-03'));
+  assert.ok(html.includes('styles.css?v=20261022-04'));
   assert.ok(html.includes('app.js?v=20261021-05'));
 });
 
@@ -463,7 +463,7 @@ test('external video links are admin-managed, require rights confirmation, and r
   assert.match(auth, /from\('external_video_links'\)/);
   assert.match(auth, /\.eq\('status','approved'\)/);
   assert.match(auth, /external-clip-player/);
-  assert.match(html, /auth.js\?v=20261021-09/);
+  assert.match(html, /auth.js\?v=20261022-10/);
   assert.match(html, /admin.js\?v=20261021-03/);
 });
 
@@ -518,12 +518,30 @@ test('hidden Syrian phone field does not block sign-in form submission', () => {
 test('video upload shows an in-site progress and pending-review modal, with visible failure feedback', () => {
   assert.match(auth, /function showCreatorUploadStatus\(/);
   assert.match(auth, /جارٍ رفع الفيديو/);
-  assert.match(auth, /تم الرفع بنجاح — بانتظار موافقة الإدارة/);
+  assert.match(auth, /نجح الرفع — بانتظار الموافقة/);
   assert.match(auth, /لم يكتمل رفع الفيديو/);
   assert.match(auth, /status:'pending',visibility,is_paid:false/);
-  assert.match(html, /auth\.js\?v=20261021-09/);
+  assert.match(html, /auth\.js\?v=20261022-10/);
 });
 
+
+
+test('creator video upload opens an in-site modal with preview and measured progress', () => {
+  assert.match(auth, /function openCreatorVideoUploadModal\(/);
+  assert.match(auth, /creator-video-upload-modal/);
+  assert.match(auth, /اسم العرض/);
+  assert.match(auth, /اختيار فيديو من الجوال/);
+  assert.match(auth, /creator-video-preview/);
+  assert.match(auth, /function uploadVideoWithProgress\(/);
+  assert.match(auth, /xhr\.upload\.onprogress/);
+  assert.match(auth, /creator-upload-progress-track/);
+  assert.match(auth, /الوقت المتبقي تقريباً/);
+  assert.match(auth, /نجح الرفع — بانتظار الموافقة/);
+  assert.match(auth, /خروج \/ رجوع للملف الشخصي/);
+  assert.doesNotMatch(auth, /visibility-options/);
+  assert.match(html, /auth\.js\?v=20261022-10/);
+  assert.match(html, /styles\.css\?v=20261022-04/);
+});
 
 test('creator batch uploader accepts videos of any duration and does not require portrait orientation', () => {
   assert.doesNotMatch(batchUpload, /TARGET_DURATION_MIN|TARGET_DURATION_MAX|ليس قريباً من 10 ثوانٍ/);
