@@ -614,9 +614,7 @@
       if (document.getElementById('auth-submit')) { submit.disabled = false; submit.textContent = mode === 'signup' ? 'إنشاء حساب' : 'تسجيل الدخول'; }
     }
   });
-  document.addEventListener('click', event => {
-    if (event.target.closest('[data-view="profile"]')) setTimeout(renderProfile, 0);
-  });
+  // Profile rendering is owned by the router; avoid a second asynchronous render on the same click.
   document.addEventListener('submit', async event => {
     if (event.target.id !== 'profile-form') return;
     event.preventDefault();
