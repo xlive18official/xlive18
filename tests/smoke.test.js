@@ -551,3 +551,12 @@ test('creator batch uploader accepts videos of any duration and does not require
   assert.match(auth, /clickTarget\?\.closest\('\[data-creator-upload\]'\)/);
   assert.match(html, /batch-video-upload\.js\?v=20261021-01/);
 });
+
+
+test('creator video upload may persist preview_path without weakening pending-review RLS', () => {
+  const migration = readFileSync('supabase/migrations/0033_grant_video_preview_path_insert.sql', 'utf8');
+  assert.match(migration, /grant insert \(owner_id, title, description, storage_path, preview_path, status, visibility, is_paid\)\s+on public\.videos to authenticated/i);
+  assert.match(auth, /preview_path:previewPath/);
+  assert.match(auth, /status:'pending',visibility,is_paid:false/);
+  assert.match(migration, /revoke insert on public\.videos from authenticated/i);
+});
