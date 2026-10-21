@@ -531,5 +531,5 @@ test('creator batch uploader accepts videos of any duration and does not require
   assert.match(batchUpload, /data-batch-video-upload/);
   assert.match(batchUpload, /event\.target instanceof Element/);
   assert.match(auth, /clickTarget\?\.closest\('\[data-creator-upload\]'\)/);
-  assert.match(html, /batch-video-upload\\.js\\?v=20261021-01/);
+  assert.match(html, /batch-video-upload\.js\?v=20261021-01/);
 });
