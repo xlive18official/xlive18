@@ -560,3 +560,11 @@ test('creator video upload may persist preview_path without weakening pending-re
   assert.match(auth, /status:'pending',visibility,is_paid:false/);
   assert.match(migration, /revoke insert on public\.videos from authenticated/i);
 });
+
+
+test('pending upload notification kind is accepted by the notifications constraint', () => {
+  const migration = readFileSync('supabase/migrations/0034_allow_upload_pending_notifications.sql', 'utf8');
+  assert.match(migration, /notifications_kind_check/);
+  assert.match(migration, /'upload_pending'/);
+  assert.match(migration, /alter table public\.notifications/i);
+});
